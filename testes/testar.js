@@ -40,11 +40,15 @@ const ok = (c, m) => { console.log((c ? "ok   " : "FALHA ") + m); if (!c) falhas
   ok(r.includes("Gasto no mês") && r.includes("R$ 33,00") && r.includes("Resta R$ 967,00"), "resumo soma o mês e mostra o que resta");
   ok(r.includes("Limpeza") && r.includes("83% do limite"), "aviso de 80% do limite");
   ok(r.includes("Atacadão"), "por ida ao mercado");
-  // lista
-  await aba("lista","Lista"); await p.click("[data-act=novo-item]"); await p.fill("[name=nome]", "Arroz"); await p.fill("[name=preco]", "30"); await p.click("dialog .primary");
-  ok((await txt()).includes("Estimado da lista: R$ 30,00"), "lista com estimado");
-  await p.click(".tick"); await p.click("dialog .primary");
-  ok((await txt()).includes("Sua lista está vazia"), "marcar comprado tira da lista");
+  // lista simples: só o nome; o preço entra na hora de comprar
+  await aba("lista","Lista"); await p.fill("#rapido-in", "Arroz"); await p.press("#rapido-in", "Enter");
+  await p.fill("#rapido-in", "Feijão"); await p.press("#rapido-in", "Enter");
+  ok((await txt()).includes("Arroz") && (await txt()).includes("Feijão"), "lista simples: só o nome, sem categoria nem valor");
+  await p.click(".tick >> nth=0");
+  ok((await p.inputValue("dialog [name=nome]")) === "Arroz", "círculo abre a compra com o nome");
+  await p.fill("dialog [name=preco]", "30"); await p.click("dialog .primary");
+  ok(!(await txt()).includes("Arroz") && (await txt()).includes("Feijão"), "comprado sai da lista");
+  await p.click("text=Feijão"); await p.click("dialog .danger"); ok((await txt()).includes("Sua lista está vazia"), "excluir item da lista");
   await aba("compras","Compras"); ok((await txt()).includes("Arroz"), "…e vira compra");
   // apagar e desfazer
   await p.click("text=Arroz"); await p.click("dialog .danger"); ok(!(await txt()).includes("Arroz"), "excluir");
