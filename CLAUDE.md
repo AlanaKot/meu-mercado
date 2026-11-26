@@ -30,7 +30,7 @@ Meu Mercado: app pessoal para controlar o gasto com mercado. Irmão do **Meus Ga
 
 - **Teto** (`S.config.teto` do mês, `S.config.tetoSemana` da semana, segunda a domingo), editado em `formTeto()`.
 - **Compras** (`S.compras`): `nome`, `preco` (cada), `qtd`, `cat`, `data`, `local`. Total = preço × quantidade (`total()`). Sugere preço e categoria pelo nome já comprado.
-- **Lista** (`S.lista`): só `nome` (lista simples, escrita na caixa do topo, sem categoria nem valor). O círculo abre `formCompra` com `listaId`, sugerindo preço e categoria da última compra com o mesmo nome; ao salvar, o item sai da lista.
+- **Lista** (`S.lista`): só `nome` (lista simples, escrita na caixa do topo, sem categoria nem valor). O círculo abre `formCompra` com `listaId`, sugerindo preço e categoria da última compra com o mesmo nome; ao salvar, o item sai da lista. Arrastar o item para a esquerda apaga (com Desfazer).
 - **Categorias** (`S.categorias`): nome, cor, limite mensal opcional. Apagar categoria não apaga compras (ficam "Sem categoria").
 - **Resumo:** gasto do mês contra o teto, semana, previsão do mês, gasto por categoria, comparação com o mês anterior, itens que mais pesaram, total por ida (data + onde), aviso de 80% do limite.
 - Dinheiro em pt-BR (R$ 1.250,00). Aceitar `12,50`, `12.50` e `1.250,00`.

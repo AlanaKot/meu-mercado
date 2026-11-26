@@ -154,6 +154,12 @@ button.danger{color:var(--bad)}
 .row .meter{margin-block:6px 4px}
 
 /* troca de mês: setas redondas e o nome do mês */
+.sw{position:relative;overflow:hidden;background:var(--bad)}
+.sw::after{content:"Apagar";position:absolute;right:18px;top:50%;transform:translateY(-50%);color:#fff;font-weight:600}
+.sw .row{background:var(--surface);z-index:1;padding-right:16px;touch-action:pan-y;transition:transform .2s}
+.sw .row.arrasta{transition:none}
+.sw .row::before{display:none}
+.sw:not(:first-child) .row::before{display:block}
 .rapido{flex-wrap:nowrap}
 .rapido input{flex:1;min-width:0}
 .mesnav{display:flex;align-items:center;gap:8px;flex:1}
@@ -547,7 +553,7 @@ function vLista(){
   let h = `<form class="bar rapido" id="rapido"><input id="rapido-in" name="nome" placeholder="Adicionar à lista" aria-label="Adicionar à lista" autocomplete="off" enterkeyhint="done"><button class="primary" type="submit">Adicionar</button></form>`;
   if (!S.lista.length) return h + `<div class="grupo"><p class="empty">Sua lista está vazia. Escreva acima o que precisa comprar. Ao tocar no círculo, você anota o preço e vira uma compra.</p></div>`;
   return h + `<div class="grupo"><div class="list">` + S.lista.map(x =>
-    `<div class="row"><button class="tick" data-act="comprei" data-id="${esc(x.id)}" aria-label="Comprei ${esc(x.nome)}"></button><div class="grow" data-edit="1" data-act="edit-item" data-id="${esc(x.id)}"><div class="t">${esc(x.nome)}</div></div></div>`).join("") + `</div></div>`;
+    `<div class="sw"><div class="row"><button class="tick" data-act="comprei" data-id="${esc(x.id)}" aria-label="Comprei ${esc(x.nome)}"></button><div class="grow" data-edit="1" data-act="edit-item" data-id="${esc(x.id)}"><div class="t">${esc(x.nome)}</div></div></div></div>`).join("") + `</div></div><p class="need" style="margin:10px 4px">Arraste um item para o lado para apagar.</p>`;
 }
 
 function vCategorias(){
@@ -560,6 +566,27 @@ function vCategorias(){
   return h;
 }
 
+// arrastar um item da lista para a esquerda apaga (com Desfazer)
+(() => {
+  let r = null, x0 = 0, y0 = 0, dx = 0, mexeu = false;
+  const v = $("#view");
+  v.addEventListener("pointerdown", e => { r = e.target.closest(".sw .row"); if (r && !e.target.closest("button")) { x0 = e.clientX; y0 = e.clientY; dx = 0; mexeu = false; } else r = null; });
+  v.addEventListener("pointermove", e => {
+    if (!r) return;
+    dx = e.clientX - x0;
+    if (!mexeu && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(e.clientY - y0)) { mexeu = true; r.classList.add("arrasta"); try { r.setPointerCapture(e.pointerId); } catch(_) {} }
+    if (mexeu) r.style.transform = `translateX(${Math.min(0, dx)}px)`;
+  });
+  const solta = () => {
+    if (!r) return;
+    const el = r, id = el.querySelector("[data-id]").dataset.id, apaga = mexeu && dx < -Math.min(100, el.offsetWidth / 3);
+    r = null; el.classList.remove("arrasta");
+    if (apaga) { el.style.transform = "translateX(-110%)"; setTimeout(() => apagar("lista", id), 180); }
+    else el.style.transform = "";
+    if (mexeu) { const bloqueia = ev => { ev.stopPropagation(); ev.preventDefault(); }; v.addEventListener("click", bloqueia, {capture:true, once:true}); setTimeout(() => v.removeEventListener("click", bloqueia, true), 50); }
+  };
+  v.addEventListener("pointerup", solta); v.addEventListener("pointercancel", solta);
+})();
 document.addEventListener("submit", e => {
   if (e.target.id !== "rapido") return;
   e.preventDefault();

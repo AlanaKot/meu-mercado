@@ -44,6 +44,14 @@ const ok = (c, m) => { console.log((c ? "ok   " : "FALHA ") + m); if (!c) falhas
   await aba("lista","Lista"); await p.fill("#rapido-in", "Arroz"); await p.press("#rapido-in", "Enter");
   await p.fill("#rapido-in", "Feijão"); await p.press("#rapido-in", "Enter");
   ok((await txt()).includes("Arroz") && (await txt()).includes("Feijão"), "lista simples: só o nome, sem categoria nem valor");
+  // arrastar para o lado apaga, e dá para desfazer
+  await p.fill("#rapido-in", "Sal"); await p.press("#rapido-in", "Enter");
+  const cx = await p.$eval(".sw:last-child .row", r => { const b = r.getBoundingClientRect(); return [b.left + 100, b.top + b.height / 2]; });
+  await p.mouse.move(cx[0] + 100, cx[1]); await p.mouse.down(); await p.mouse.move(cx[0], cx[1], {steps:6}); await p.mouse.move(cx[0] - 160, cx[1], {steps:6}); await p.mouse.up();
+  await p.waitForFunction(() => !document.querySelector("#view").innerText.includes("Sal\n") && !/\bSal\b/.test(document.querySelector("#view").innerText));
+  ok(true, "arrastar para o lado apaga");
+  await p.click("#toast button"); ok(/\bSal\b/.test(await txt()), "…e desfazer traz de volta");
+  await p.click("text=Sal"); await p.click("dialog .danger");
   await p.click(".tick >> nth=0");
   ok((await p.inputValue("dialog [name=nome]")) === "Arroz", "círculo abre a compra com o nome");
   await p.fill("dialog [name=preco]", "30"); await p.click("dialog .primary");
