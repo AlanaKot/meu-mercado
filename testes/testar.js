@@ -110,9 +110,10 @@ const ok = (c, m) => { console.log((c ? "ok   " : "FALHA ") + m); if (!c) falhas
   ok(!(await txt()).includes("Fubá") && (await txt()).includes("No carrinho hoje"), "modo mercado: preço e sai da lista");
   await p.click("[data-act=mercado]");
   // copiar lista
-  await p.click("[data-act=copiar]"); await p.waitForSelector("#toast.on, dialog textarea, #toast:not(:empty)");
+  await p.click("[data-act=copiar]");
+  await p.waitForFunction(() => (document.querySelector("#toast") && document.querySelector("#toast").textContent.includes("copiada")) || document.querySelector("dialog[open] textarea"));
   ok(true, "copiar lista responde");
-  if (await p.$("dialog[open]")) await p.click("dialog [data-fechar]");
+  if (await p.$("dialog[open] textarea")) await p.click("dialog [data-fechar]");
   // resumo: gráfico e lembrete de backup
   await aba("resumo","Resumo"); ok((await p.$$("svg[aria-label='Gasto dos últimos 6 meses']")).length === 1, "gráfico dos últimos 6 meses");
   await p.evaluate(() => localStorage.setItem("meu-mercado-inicio", String(Date.now() - 10 * 86400000))); await p.reload();
