@@ -294,6 +294,9 @@ dialog.largo{width:min(980px,calc(100vw - 32px))}
 /* lista de opções dentro de uma janela (ex.: Backup), no estilo das listas do iPhone */
 .opcoes{display:flex;flex-direction:column;background:var(--fill);border-radius:12px;overflow:hidden}
 .opcoes button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;border-radius:0;padding:12px 16px;min-height:44px;color:var(--accent);font:inherit}
+.qtd{color:var(--muted);margin-left:8px;font-size:.9em}
+button.tick.on{background:var(--accent-fill);border-color:var(--accent-fill)}
+.mercado .row .t,.mercado-topo{font-size:1.2rem}
 .opcoes.repetir{background:var(--surface);margin-top:16px}
 .opcoes button+button{border-top:.5px solid var(--line)}
 .opcoes button span{color:var(--muted);font-size:1.2em}
@@ -479,6 +482,41 @@ let ultimo = {};
 /* ---------- peças de tela ---------- */
 // compras do mesmo item, da mais recente para a mais antiga
 const historico = nome => { const k = String(nome || "").trim().toLowerCase(); return k ? S.compras.filter(c => c.nome.trim().toLowerCase() === k).sort((a, b) => b.data.localeCompare(a.data) || (b._t || 0) - (a._t || 0)) : []; };
+// "Arroz 5kg" -> 5 kg; serve para comparar preço por quilo ou litro
+const MED = /(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l|lt|litros?|quilos?)\b/i;
+function medida(nome){
+  const m = String(nome).match(MED); if (!m) return null;
+  let q = parseBR(m[1]), u = m[2].toLowerCase();
+  if (u === "g") { q /= 1000; u = "kg"; } else if (u === "ml") { q /= 1000; u = "L"; } else if (/^(l|lt|litros?)$/.test(u)) u = "L"; else u = "kg";
+  return q > 0 ? {q, u} : null;
+}
+const baseNome = n => String(n).replace(MED, "").replace(/\s+/g, " ").trim().toLowerCase();
+const porUn = (nome, preco) => { const m = medida(nome); return m ? {v:preco / m.q, u:m.u} : null; };
+function textoUn(nome, preco){
+  const a = porUn(nome, preco); if (!a || !(preco > 0)) return "";
+  const b = baseNome(nome);
+  const melhor = S.compras.map(c => ({c, p:porUn(c.nome, c.preco)})).filter(x => x.p && x.p.u === a.u && baseNome(x.c.nome) === b).sort((x, y) => x.p.v - y.p.v)[0];
+  let t = `${brl(a.v)} por ${a.u}`;
+  if (melhor && melhor.p.v < a.v - 0.005) t += ` · já pagou ${brl(melhor.p.v)} por ${a.u} (${melhor.c.nome}, ${dm(melhor.c.data)})`;
+  return t;
+}
+// "leite x6" ou "6x leite" -> {nome:"leite", qtd:6}
+function lerItem(txt){
+  let nome = String(txt).trim(), qtd = 1, m;
+  if ((m = nome.match(/^(\d+(?:[.,]\d+)?)\s*[x×]\s+(.+)$/i))) { qtd = parseBR(m[1]); nome = m[2].trim(); }
+  else if ((m = nome.match(/^(.+?)\s*[x×]\s*(\d+(?:[.,]\d+)?)$/i))) { qtd = parseBR(m[2]); nome = m[1].trim(); }
+  return {nome, qtd:qtd > 0 ? qtd : 1};
+}
+const catDe = nome => { const h = historico(nome)[0]; return h ? h.cat : ""; };
+function subiram(){
+  const lim = iso(new Date(Date.now() - 45 * 864e5)), vistos = new Set(), r = [];
+  S.compras.forEach(c => {
+    const k = c.nome.trim().toLowerCase(); if (vistos.has(k)) return; vistos.add(k);
+    const h = historico(c.nome); if (h.length < 2 || h[0].data < lim || !(h[1].preco > 0)) return;
+    const p = h[0].preco / h[1].preco - 1; if (p >= 0.1) r.push({nome:h[0].nome, p, de:h[1].preco, para:h[0].preco});
+  });
+  return r.sort((a, b) => b.p - a.p).slice(0, 4);
+}
 const dm = s => s.slice(8) + "/" + s.slice(5, 7);
 function textoHist(nome){
   const h = historico(nome); if (!h.length) return "";
@@ -564,7 +602,8 @@ function vResumo(){
   cm.forEach(c => { const k = c.data + "|" + (c.local || ""); const o = idas.get(k) || {data:c.data, local:c.local || "", t:0, n:0}; o.t += total(c); o.n++; idas.set(k, o); });
   const idHtml = idas.size ? `<div class="list">` + [...idas.values()].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 8).map(x => `<div class="row"><div class="grow"><div class="t">${esc(x.local || "Compras do dia")}</div><div class="m">${esc(fmtData(x.data))} · ${x.n} ${x.n > 1 ? "itens" : "item"}</div></div><span class="val">${brl(x.t)}</span></div>`).join("") + `</div>` : `<p class="empty">Nenhuma compra neste mês.</p>`;
 
-  return `<div class="bar">${mesnav()}</div>${avisoBackup()}${w}${avisos}<div class="grid2"><div class="col">${secao("Onde está indo", onde)}${secao("Comparado ao mês passado", compHtml)}</div><div class="col">${secao("O que mais pesou", itHtml)}${secao("Por ida ao mercado", idHtml)}${secao("Últimos 6 meses", grafico6())}</div></div>`;
+  const sobe = subiram().map(x => `<div class="notice"><span><b>${esc(x.nome)}</b> subiu ${Math.round(x.p * 100)}%: ${brl(x.de)} → ${brl(x.para)}</span></div>`).join("");
+  return `<div class="bar">${mesnav()}</div>${avisoBackup()}${w}${avisos}${sobe}<div class="grid2"><div class="col">${secao("Onde está indo", onde)}${secao("Comparado ao mês passado", compHtml)}</div><div class="col">${secao("O que mais pesou", itHtml)}${secao("Por ida ao mercado", idHtml)}${secao("Últimos 6 meses", grafico6())}</div></div>`;
 }
 
 function vCompras(){
@@ -577,20 +616,42 @@ function vCompras(){
   dias.forEach((cs, d) => {
     h += `<div class="dia-h"><span>${esc(fmtData(d))}</span><span class="num">${brl(soma(cs))}</span></div><div class="grupo"><div class="list">` + cs.map(c => {
       const k = cat(c.cat);
-      return `<div class="row" data-edit="1" data-act="edit-compra" data-id="${esc(c.id)}"><span class="dot" style="background:${esc(k.cor)}"></span><div class="grow"><div class="t">${esc(c.nome)}</div><div class="m">${c.qtd !== 1 ? `${c.qtd} × ${brl(c.preco)} · ` : ""}${esc(k.nome)}${c.local ? " · " + esc(c.local) : ""}</div></div><span class="val">${brl(total(c))}</span></div>`;
+      return `<div class="row" data-edit="1" data-act="edit-compra" data-id="${esc(c.id)}"><span class="dot" style="background:${esc(k.cor)}"></span><div class="grow"><div class="t">${esc(c.nome)}</div><div class="m">${c.qtd !== 1 ? `${c.qtd} × ${brl(c.preco)} · ` : ""}${(() => { const u = porUn(c.nome, c.preco); return u ? `${brl(u.v)}/${u.u} · ` : ""; })()}${esc(k.nome)}${c.local ? " · " + esc(c.local) : ""}</div></div><span class="val">${brl(total(c))}</span></div>`;
     }).join("") + `</div></div>`;
   });
   return h;
 }
 
+let mercado = false, sel = null;
 function vLista(){
   const nomes = [...new Set(S.compras.map(x => x.nome))];
   const anterior = [...new Set(doMes(mesMove(hoje().slice(0, 7), -1)).map(c => c.nome))].filter(n => !S.lista.some(x => x.nome.toLowerCase() === n.toLowerCase()));
-  const repetir = anterior.length ? `<div class="opcoes repetir"><button type="button" data-act="repetir">Repetir compras do mês passado (${anterior.length})<span>↻</span></button></div>` : "";
-  let h = `<form class="bar rapido" id="rapido"><input id="rapido-in" name="nome" list="dl-sug" placeholder="Adicionar à lista" aria-label="Adicionar à lista" autocomplete="off" enterkeyhint="done"><button class="primary" type="submit">Adicionar</button></form><datalist id="dl-sug">${nomes.map(n => `<option value="${esc(n)}">`).join("")}</datalist>`;
-  if (!S.lista.length) return h + `<div class="grupo"><p class="empty">Sua lista está vazia. Escreva acima o que precisa comprar. Ao tocar no círculo, você anota o preço e vira uma compra.</p></div>${repetir}`;
-  return h + `<div class="grupo"><div class="list">` + S.lista.map(x => { const u = historico(x.nome)[0];
-    return `<div class="sw"><div class="row"><button class="tick" data-act="comprei" data-id="${esc(x.id)}" aria-label="Comprei ${esc(x.nome)}"></button><div class="grow" data-edit="1" data-act="edit-item" data-id="${esc(x.id)}"><div class="t">${esc(x.nome)}</div>${u ? `<div class="m">Último: ${brl(u.preco)} em ${dm(u.data)}</div>` : ""}</div></div></div>`; }).join("") + `</div></div>${repetir}<p class="need" style="margin:10px 4px">Arraste um item para o lado para apagar.</p>`;
+  let h = "";
+  if (mercado) {
+    const teto = S.config.teto || 0, mh = hoje().slice(0, 7), carrinho = soma(S.compras.filter(c => c.data === hoje())), gm = soma(doMes(mh));
+    h += `<div class="notice mercado-topo"><span>No carrinho hoje: <b>${brl(carrinho)}</b>${teto ? ` · resta do teto do mês: <b>${brl(Math.max(0, teto - gm))}</b>` : ""}</span></div>`;
+  }
+  h += `<form class="bar rapido" id="rapido"><input id="rapido-in" name="nome" list="dl-sug" placeholder="Adicionar à lista" aria-label="Adicionar à lista" autocomplete="off" enterkeyhint="done"><button class="primary" type="submit">Adicionar</button></form><datalist id="dl-sug">${nomes.map(n => `<option value="${esc(n)}">`).join("")}</datalist>`;
+  const grupos = new Map();
+  S.lista.forEach(x => { const k = catDe(x.nome); const id = S.categorias.some(c => c.id === k) ? k : ""; if (!grupos.has(id)) grupos.set(id, []); grupos.get(id).push(x); });
+  const ordem = [...S.categorias.map(c => c.id), ""].filter(id => grupos.has(id));
+  const linha = x => { const u = historico(x.nome)[0], marcado = sel && sel.has(x.id);
+    return `<div class="sw"><div class="row"><button class="tick${marcado ? " on" : ""}" data-act="comprei" data-id="${esc(x.id)}" aria-pressed="${!!marcado}" aria-label="${sel ? "Marcar" : "Comprei"} ${esc(x.nome)}"></button><div class="grow" data-edit="1" data-act="edit-item" data-id="${esc(x.id)}"><div class="t">${esc(x.nome)}${x.qtd > 1 ? `<span class="qtd">×${esc(String(x.qtd).replace(".", ","))}</span>` : ""}</div>${u ? `<div class="m">Último: ${brl(u.preco)} em ${dm(u.data)}</div>` : ""}</div></div></div>`; };
+  if (!S.lista.length) h += `<div class="grupo"><p class="empty">Sua lista está vazia. Escreva acima o que precisa comprar, por exemplo <b>leite x6</b>. Ao tocar no círculo, você anota o preço e vira uma compra.</p></div>`;
+  else ordem.forEach(id => {
+    const mostra = ordem.length > 1 || id;
+    h += (mostra ? `<div class="dia-h"><span>${esc(id ? cat(id).nome : "Outros")}</span></div>` : "") + `<div class="grupo"><div class="list">${grupos.get(id).map(linha).join("")}</div></div>`;
+  });
+  const bt = (x, t, i) => `<button type="button" data-act="${x}">${t}<span>${i}</span></button>`;
+  let ops = "";
+  if (sel) ops = bt("varios-ok", `Anotar ${sel.size} ${sel.size === 1 ? "item" : "itens"}`, "✓") + bt("varios", "Cancelar seleção", "✕");
+  else {
+    if (S.lista.length) ops += bt("mercado", mercado ? "Sair do modo mercado" : "Modo mercado", "🛒") + bt("varios", "Comprar vários de uma vez", "☑") + bt("copiar", "Copiar lista para enviar", "⧉");
+    if (anterior.length) ops += bt("repetir", `Repetir compras do mês passado (${anterior.length})`, "↻");
+  }
+  if (ops) h += `<div class="opcoes repetir">${ops}</div>`;
+  if (S.lista.length) h += `<p class="need" style="margin:10px 4px">Arraste um item para o lado para apagar.</p>`;
+  return h;
 }
 
 function vCategorias(){
@@ -628,7 +689,7 @@ document.addEventListener("submit", e => {
   if (e.target.id !== "rapido") return;
   e.preventDefault();
   const nome = e.target.nome.value.trim(); if (!nome) return;
-  S.lista.push(carimbar({id:uid(), nome})); persist(); render();
+  const it = lerItem(nome); S.lista.push(carimbar({id:uid(), nome:it.nome, qtd:it.qtd})); persist(); render();
   const i = $("#rapido-in"); if (i) i.focus();
 });
 const V = {resumo:vResumo, compras:vCompras, lista:vLista, categorias:vCategorias};
@@ -679,6 +740,7 @@ function formCompra(c = {}){
     <div class="duo"><div class="field"><label for="fd">Data</label><input id="fd" type="date" name="data" required value="${esc(c.data || ultimo.data || hoje())}"></div>
     <div class="field"><label for="fl">Onde (opcional)</label><input id="fl" name="local" list="dl-l" autocomplete="off" value="${esc(c.local ?? ultimo.local ?? "")}"></div></div>
     <datalist id="dl-l">${locais.map(n => `<option value="${esc(n)}">`).join("")}</datalist>
+    <p class="need" id="kg" style="margin:-4px 4px 10px"></p>
     <p class="need" id="tot" style="margin:0 4px 10px"></p>
     ${botoes(novo ? `<div class="opcoes"><button type="submit" value="outro">Salvar e anotar outro<span>＋</span></button></div>` : opcao("del", "Excluir<span>🗑</span>", "danger"))}`,
   (fd, sub) => {
@@ -699,11 +761,12 @@ function formCompra(c = {}){
   const atualiza = () => {
     const f = frm.elements; if (!f.nome) return;
     const h = $("#hist"); if (h) h.textContent = textoHist(f.nome.value);
+    const kg = $("#kg"); if (kg) kg.textContent = textoUn(f.nome.value, parseBR(f.preco.value) || 0);
     const t = $("#tot"); if (!t) return;
     const m = (f.data.value || hoje()).slice(0, 7), teto = S.config.teto || 0;
     const este = Math.max(0, parseBR(f.preco.value) || 0) * Math.max(0, parseBR(f.qtd.value || "1") || 0);
     const antes = soma(doMes(m).filter(x => x.id !== c.id)), depois = antes + este;
-    t.textContent = `Em ${mesNome(m)}: ${brl(antes)}${este ? ` → ${brl(depois)} com esta compra` : ""}${teto ? ` · ${depois > teto ? "passa " + brl(depois - teto) + " do teto" : "resta " + brl(teto - depois) + " do teto"}` : ""}`;
+    t.textContent = `${m !== hoje().slice(0, 7) ? "Atenção: esta data é de outro mês. " : ""}Em ${mesNome(m)}: ${brl(antes)}${este ? ` → ${brl(depois)} com esta compra` : ""}${teto ? ` · ${depois > teto ? "passa " + brl(depois - teto) + " do teto" : "resta " + brl(teto - depois) + " do teto"}` : ""}`;
   };
   atualiza();
   frm.oninput = e => {
@@ -721,13 +784,59 @@ function formCompra(c = {}){
 
 function formItem(x = {}){
   abrir(`<h2 tabindex="-1">Editar item</h2>
-    <div class="field"><label for="in">O que comprar</label><input id="in" name="nome" required autocomplete="off" value="${esc(x.nome || "")}"></div>
+    <div class="duo"><div class="field"><label for="in">O que comprar</label><input id="in" name="nome" required autocomplete="off" value="${esc(x.nome || "")}"></div>
+    <div class="field"><label for="iq">Quantidade</label><input id="iq" name="qtd" inputmode="decimal" value="${x.qtd > 1 ? esc(String(x.qtd).replace(".", ",")) : "1"}"></div></div>
     ${botoes(opcao("del", "Excluir<span>🗑</span>", "danger"))}`,
   fd => {
     const nome = String(fd.get("nome")).trim(); if (!nome) return erro("Escreva o que precisa comprar.");
-    Object.assign(x, {nome, _t:Date.now()});
+    Object.assign(x, {nome, qtd:parseBR(fd.get("qtd") || "1") > 0 ? parseBR(fd.get("qtd") || "1") : 1, _t:Date.now()});
     persist(); fechar(); render();
   }, k => { if (k === "del") { fechar(); apagar("lista", x.id); } });
+}
+
+function formPreco(x){
+  const u = historico(x.nome)[0];
+  abrir(`<h2 tabindex="-1">${esc(x.nome)}</h2>
+    <p class="need" style="margin:-4px 4px 10px">${esc(textoHist(x.nome)) || "Primeira vez que você anota este item."}</p>
+    <div class="duo"><div class="field"><label for="pp">Preço (cada)</label><input id="pp" name="preco" inputmode="decimal" placeholder="${u ? fmtNum(u.preco) : "0,00"}" required autocomplete="off"></div>
+    <div class="field"><label for="pq">Quantidade</label><input id="pq" name="qtd" inputmode="decimal" value="${x.qtd > 1 ? esc(String(x.qtd).replace(".", ",")) : "1"}"></div></div>
+    <div class="field"><label for="pl">Onde (opcional)</label><input id="pl" name="local" autocomplete="off" value="${esc(ultimo.local ?? (S.compras.filter(c => c.data === hoje()).pop() || {}).local ?? "")}"></div>
+    ${botoes()}`,
+  fd => {
+    const preco = parseBR(fd.get("preco")), qtd = parseBR(fd.get("qtd") || "1");
+    if (!(preco > 0)) return erro("Escreva o preço, por exemplo 12,50.");
+    if (!(qtd > 0)) return erro("A quantidade precisa ser maior que zero.");
+    const local = String(fd.get("local")).trim();
+    S.compras.push(carimbar({id:uid(), nome:x.nome, preco, qtd, cat:(u && u.cat) || (S.categorias[0] || {}).id || "", data:hoje(), local}));
+    remover("lista", x.id); ultimo = {data:hoje(), local};
+    persist(); fechar(); render();
+  });
+  setTimeout(() => { const i = $("#pp"); if (i) i.focus(); }, 50);
+}
+function formVarios(ids){
+  const itens = ids.map(id => S.lista.find(k => k.id === id)).filter(Boolean);
+  abrir(`<h2 tabindex="-1">Anotar ${itens.length} ${itens.length === 1 ? "item" : "itens"}</h2>
+    <p class="need" style="margin:-4px 4px 10px">Preencha o preço de cada um. Quem ficar sem preço continua na lista.</p>
+    ${itens.map((x, i) => { const u = historico(x.nome)[0]; return `<div class="duo"><div class="field"><label for="vp${i}">${esc(x.nome)}</label><input id="vp${i}" name="p${i}" inputmode="decimal" placeholder="${u ? fmtNum(u.preco) : "0,00"}" autocomplete="off"></div>
+    <div class="field"><label for="vq${i}">Quantidade</label><input id="vq${i}" name="q${i}" inputmode="decimal" value="${x.qtd > 1 ? esc(String(x.qtd).replace(".", ",")) : "1"}"></div></div>`; }).join("")}
+    <div class="duo"><div class="field"><label for="vd">Data</label><input id="vd" type="date" name="data" required value="${hoje()}"></div>
+    <div class="field"><label for="vl">Onde (opcional)</label><input id="vl" name="local" autocomplete="off" value="${esc(ultimo.local ?? "")}"></div></div>
+    ${botoes()}`,
+  fd => {
+    const local = String(fd.get("local")).trim(), data = fd.get("data"); let n = 0;
+    if (!data) return erro("Escolha a data.");
+    for (let i = 0; i < itens.length; i++) { const p = parseBR(fd.get("p" + i)), q = parseBR(fd.get("q" + i) || "1"); if (fd.get("p" + i) && !(p > 0)) return erro("Confira o preço de " + itens[i].nome + "."); if (p > 0 && !(q > 0)) return erro("Confira a quantidade de " + itens[i].nome + "."); }
+    itens.forEach((x, i) => { const p = parseBR(fd.get("p" + i)), q = parseBR(fd.get("q" + i) || "1"); if (!(p > 0)) return;
+      S.compras.push(carimbar({id:uid(), nome:x.nome, preco:p, qtd:q, cat:catDe(x.nome) || (S.categorias[0] || {}).id || "", data, local})); remover("lista", x.id); n++; });
+    if (!n) return erro("Escreva o preço de pelo menos um item.");
+    ultimo = {data, local}; sel = null; persist(); fechar(); render(); toast(n + (n === 1 ? " compra anotada" : " compras anotadas"));
+  });
+}
+function copiarLista(){
+  const t = "Lista de compras:\n" + S.lista.map(x => "- " + x.nome + (x.qtd > 1 ? " x" + String(x.qtd).replace(".", ",") : "")).join("\n");
+  const mostra = () => { abrir(`<h2 tabindex="-1">Copie a lista</h2><div class="field"><textarea id="txtlista" rows="8" readonly>${esc(t)}</textarea></div><div class="actions"><div class="r iguais"><button type="button" class="primary" data-fechar>Pronto</button></div></div>`, null); const a = $("#txtlista"); if (a) a.select(); };
+  if (navigator.share) navigator.share({text:t}).catch(() => {});
+  else if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast("Lista copiada"), mostra); else mostra();
 }
 
 function formCat(c = {}){
@@ -833,7 +942,17 @@ const ACOES = {
     persist(); render(); toast(n + (n === 1 ? " item adicionado" : " itens adicionados"));
   },
   "edit-item": id => formItem(S.lista.find(x => x.id === id)),
-  "comprei": id => { const x = S.lista.find(k => k.id === id); if (x) { const m = [...S.compras].reverse().find(k => k.nome.toLowerCase() === x.nome.toLowerCase()); formCompra({nome:x.nome, cat:x.cat || (m && m.cat), preco:x.preco || (m && m.preco), listaId:x.id}); } },
+  "comprei": id => {
+    const x = S.lista.find(k => k.id === id); if (!x) return;
+    if (sel) { sel.has(id) ? sel.delete(id) : sel.add(id); render(); return; }
+    if (mercado) { formPreco(x); return; }
+    const m = [...S.compras].reverse().find(k => k.nome.toLowerCase() === x.nome.toLowerCase());
+    formCompra({nome:x.nome, qtd:x.qtd, cat:x.cat || (m && m.cat), preco:x.preco || (m && m.preco), listaId:x.id});
+  },
+  "mercado": () => { mercado = !mercado; document.body.classList.toggle("mercado", mercado); render(); },
+  "varios": () => { sel = sel ? null : new Set(); render(); },
+  "varios-ok": () => { if (sel && sel.size) formVarios([...sel]); else toast("Toque nos círculos para escolher os itens"); },
+  "copiar": () => copiarLista(),
   "nova-cat": () => formCat({}),
   "edit-cat": id => formCat(S.categorias.find(x => x.id === id))
 };

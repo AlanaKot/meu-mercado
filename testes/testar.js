@@ -76,6 +76,43 @@ const ok = (c, m) => { console.log((c ? "ok   " : "FALHA ") + m); if (!c) falhas
   ok(await p.$eval("#dl-sug", d => [...d.options].some(o => o.value === "Bombom")), "sugere itens já comprados");
   await p.click("[data-act=repetir]"); ok((await txt()).includes("Café"), "repetir compras do mês passado");
   ok((await txt()).includes("Último: R$ 5,00"), "item da lista mostra o último preço");
+  // quantidade na lista
+  await p.fill("#rapido-in", "Leite x6"); await p.press("#rapido-in", "Enter");
+  ok((await txt()).includes("×6"), "lista entende \"leite x6\"");
+  await p.click('.sw:has-text("Leite") .tick');
+  ok((await p.inputValue("dialog [name=qtd]")) === "6", "quantidade da lista vai para a compra");
+  await p.click("dialog [data-fechar]");
+  // preço por quilo e aviso de outro mês
+  await aba("compras","Compras"); await p.click("[data-act=nova-compra]");
+  await p.fill("dialog [name=nome]", "Arroz 5kg"); await p.fill("dialog [name=preco]", "30");
+  ok((await p.innerText("#kg")).replace(/ /g, " ").includes("R$ 6,00 por kg"), "preço por kg");
+  await p.click("dialog .primary");
+  await p.click("[data-act=nova-compra]"); await p.fill("dialog [name=nome]", "Arroz 1kg"); await p.fill("dialog [name=preco]", "7");
+  ok((await p.innerText("#kg")).replace(/ /g, " ").includes("já pagou R$ 6,00 por kg"), "compara com o melhor preço por kg");
+  await p.fill("dialog [name=data]", mp);
+  ok((await p.innerText("#tot")).includes("outro mês"), "avisa quando a data é de outro mês");
+  await p.click("dialog [data-fechar]");
+  // alerta de aumento de preço
+  await p.click("[data-act=nova-compra]"); await p.fill("dialog [name=nome]", "Queijo"); await p.fill("dialog [name=preco]", "10"); await p.fill("dialog [name=data]", mp); await p.click("dialog .primary");
+  await p.click("[data-act=nova-compra]"); await p.fill("dialog [name=nome]", "Queijo"); await p.fill("dialog [name=preco]", "12"); await p.fill("dialog [name=data]", await p.evaluate(() => new Date().toISOString().slice(0, 10))); await p.click("dialog .primary");
+  await aba("resumo","Resumo"); ok((await txt()).includes("Queijo subiu 20%"), "alerta de aumento de preço");
+  // lista por categoria
+  await aba("lista","Lista"); await p.fill("#rapido-in", "Bombom"); await p.press("#rapido-in", "Enter"); await p.fill("#rapido-in", "Queijo"); await p.press("#rapido-in", "Enter");
+  ok(/alimentos/i.test(await txt()), "lista agrupada pela categoria da última compra");
+  // comprar vários de uma vez
+  await p.click("[data-act=varios]"); await p.click('.sw:has-text("Bombom") .tick'); await p.click('.sw:has-text("Queijo") .tick'); await p.click("[data-act=varios-ok]");
+  await p.fill("dialog [name=p0]", "8,50"); await p.fill("dialog [name=p1]", "12,50"); await p.click("dialog .primary");
+  ok(!/Bombom|Queijo/.test(await txt()), "comprar vários tira todos da lista");
+  // modo mercado
+  await p.fill("#rapido-in", "Fubá"); await p.press("#rapido-in", "Enter"); await p.click("[data-act=mercado]");
+  ok((await txt()).includes("No carrinho hoje"), "modo mercado mostra o carrinho");
+  await p.click('.sw:has-text("Fubá") .tick'); await p.fill("dialog [name=preco]", "4"); await p.click("dialog .primary");
+  ok(!(await txt()).includes("Fubá") && (await txt()).includes("No carrinho hoje"), "modo mercado: preço e sai da lista");
+  await p.click("[data-act=mercado]");
+  // copiar lista
+  await p.click("[data-act=copiar]"); await p.waitForSelector("#toast.on, dialog textarea, #toast:not(:empty)");
+  ok(true, "copiar lista responde");
+  if (await p.$("dialog[open]")) await p.click("dialog [data-fechar]");
   // resumo: gráfico e lembrete de backup
   await aba("resumo","Resumo"); ok((await p.$$("svg[aria-label='Gasto dos últimos 6 meses']")).length === 1, "gráfico dos últimos 6 meses");
   await p.evaluate(() => localStorage.setItem("meu-mercado-inicio", String(Date.now() - 10 * 86400000))); await p.reload();

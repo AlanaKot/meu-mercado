@@ -30,14 +30,15 @@ Meu Mercado: app pessoal para controlar o gasto com mercado. Irmão do **Meus Ga
 
 - **Teto** (`S.config.teto` do mês, `S.config.tetoSemana` da semana, segunda a domingo), editado em `formTeto()`.
 - **Compras** (`S.compras`): `nome`, `preco` (cada), `qtd`, `cat`, `data`, `local`. Total = preço × quantidade (`total()`). Sugere preço e categoria pelo nome já comprado.
-- **Lista** (`S.lista`): só `nome` (lista simples, escrita na caixa do topo, sem categoria nem valor). O círculo abre `formCompra` com `listaId`, sugerindo preço e categoria da última compra com o mesmo nome; ao salvar, o item sai da lista. Arrastar o item para a esquerda apaga (com Desfazer).
+- **Lista** (`S.lista`): `nome` e `qtd` (escreve-se "leite x6"), sem categoria nem valor. Agrupada pela categoria da última compra do mesmo nome (`catDe()`). O círculo abre `formCompra` com `listaId` (sugere preço e categoria); ao salvar, o item sai da lista. Arrastar para a esquerda apaga (com Desfazer). Botões: **Modo mercado** (`mercado`: letras grandes, carrinho de hoje e `formPreco()`), **Comprar vários** (`sel`, `formVarios()`), **Copiar lista** (`copiarLista()`) e **Repetir mês passado**.
+- **Preço:** `formCompra` mostra último preço (`textoHist()`), total do mês com a compra (`#tot`, avisa data de outro mês) e preço por kg/L lido do nome, como "Arroz 5kg" (`medida()`, `textoUn()`). O Resumo avisa quando um item subiu 10% ou mais (`subiram()`), mostra gráfico de 6 meses (`grafico6()`) e lembra do backup (`avisoBackup()`; a data do último backup fica no `localStorage`, fora do backup).
 - **Categorias** (`S.categorias`): nome, cor, limite mensal opcional. Apagar categoria não apaga compras (ficam "Sem categoria").
 - **Resumo:** gasto do mês contra o teto, semana, previsão do mês, gasto por categoria, comparação com o mês anterior, itens que mais pesaram, total por ida (data + onde), aviso de 80% do limite.
 - Dinheiro em pt-BR (R$ 1.250,00). Aceitar `12,50`, `12.50` e `1.250,00`.
 
 ## Ideias para depois
 
-Sincronizar com o Google Drive (como no Meus Gastos), repetir a lista do mês anterior, histórico de preço por item.
+Sincronizar com o Google Drive (como no Meus Gastos; precisa de Client ID do Google, que nunca vai no código).
 
 ## Publicação
 
