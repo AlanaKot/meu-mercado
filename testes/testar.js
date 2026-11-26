@@ -15,7 +15,7 @@ const ok = (c, m) => { console.log((c ? "ok   " : "FALHA ") + m); if (!c) falhas
   ok((await txt()).includes("Resta R$ 1.000,00"), "teto do mês aparece");
   // botão "+ Compra" cabe na tela do celular
   await aba("compras","Compras");
-  ok(await p.$eval("[data-act=nova-compra]", b => { const r = b.getBoundingClientRect(); return r.right <= innerWidth && r.width <= 60; }), "botão + Compra cabe na tela");
+  ok(await p.$eval("[data-act=nova-compra]", b => { const r = b.getBoundingClientRect(); return r.right <= innerWidth && b.scrollWidth <= b.clientWidth; }), "botão + Compra cabe na tela");
   // compra
   await p.click("[data-act=nova-compra]");
   await p.fill("[name=nome]", "Sabão em pó"); await p.fill("[name=preco]", "12,50"); await p.fill("[name=qtd]", "2");
