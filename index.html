@@ -476,6 +476,39 @@ let filtro = "";
 let ultimo = {};
 
 /* ---------- peças de tela ---------- */
+// compras do mesmo item, da mais recente para a mais antiga
+const historico = nome => { const k = String(nome || "").trim().toLowerCase(); return k ? S.compras.filter(c => c.nome.trim().toLowerCase() === k).sort((a, b) => b.data.localeCompare(a.data) || (b._t || 0) - (a._t || 0)) : []; };
+const dm = s => s.slice(8) + "/" + s.slice(5, 7);
+function textoHist(nome){
+  const h = historico(nome); if (!h.length) return "";
+  const a = h[0], b = h[1];
+  let t = `Último preço: ${brl(a.preco)} em ${dm(a.data)}${a.local ? " (" + a.local + ")" : ""}`;
+  if (b) { const d = Math.round((a.preco - b.preco) * 100) / 100; t += ` · antes ${brl(b.preco)}${d ? ` (${d > 0 ? "subiu" : "baixou"} ${brl(Math.abs(d))})` : " (igual)"}`; }
+  return t;
+}
+// backup: guarda só no aparelho quando foi o último download
+const BK = "meu-mercado-backup", PRIMEIRO = "meu-mercado-inicio";
+const lerLS = k => { try { return +localStorage.getItem(k) || 0; } catch(e) { return 0; } };
+const gravarLS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch(e) {} };
+if (!lerLS(PRIMEIRO)) gravarLS(PRIMEIRO, Date.now());
+function avisoBackup(){
+  if (!S.compras.length) return "";
+  const ultimo = lerLS(BK), dias = Math.floor((Date.now() - (ultimo || lerLS(PRIMEIRO))) / 864e5);
+  if (ultimo ? dias < 30 : dias < 7) return "";
+  return `<div class="notice"><span>${ultimo ? `Faz ${dias} dias sem backup.` : "Você ainda não fez backup."} Se perder o celular, perde os dados.</span><button type="button" data-act="ajustes">Fazer backup</button></div>`;
+}
+function grafico6(){
+  const ms = [-5, -4, -3, -2, -1, 0].map(n => mesMove(mes, n)), vs = ms.map(m => soma(doMes(m))), teto = S.config.teto || 0;
+  const max = Math.max(...vs, teto, 1), W = 300, H = 120, base = 100, bw = 28, gap = (W - 6 * bw) / 7;
+  const y = v => base - v / max * 80;
+  const nomeM = m => new Date(+m.slice(0, 4), +m.slice(5) - 1, 1).toLocaleDateString("pt-BR", {month:"short"}).replace(".", "");
+  const barras = ms.map((m, i) => { const x = gap + i * (bw + gap), v = vs[i];
+    return `<rect x="${x}" y="${y(v)}" width="${bw}" height="${Math.max(v ? 1 : 0, base - y(v))}" rx="4" fill="${m === mes ? "var(--accent-fill)" : "var(--fill-2)"}"/>` +
+      `<text x="${x + bw / 2}" y="${y(v) - 4}" text-anchor="middle" font-size="9" fill="var(--muted)">${v ? Math.round(v) : ""}</text>` +
+      `<text x="${x + bw / 2}" y="114" text-anchor="middle" font-size="10" fill="var(--muted)">${nomeM(m)}</text>`; }).join("");
+  const linha = teto ? `<line x1="0" x2="${W}" y1="${y(teto)}" y2="${y(teto)}" stroke="var(--m-warn)" stroke-dasharray="4 3"/><text x="${W}" y="${y(teto) - 3}" text-anchor="end" font-size="9" fill="var(--muted)">teto ${Math.round(teto)}</text>` : "";
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gasto dos últimos 6 meses" style="width:100%;height:auto;display:block;padding:8px 0">${linha}${barras}</svg>`;
+}
 const mesnav = () => `<div class="mesnav"><button class="topo-btn seta" data-act="mes-" aria-label="Mês anterior">‹</button><h2>${esc(mesNome(mes))}</h2><button class="topo-btn seta" data-act="mes+" aria-label="Próximo mês">›</button></div>`;
 const medidor = (p, cor) => `<div class="meter"><i style="width:${Math.min(100, Math.max(0, p * 100))}%;background:${cor}"></i></div>`;
 const corLimite = p => p > 1 ? "var(--m-bad)" : p >= .8 ? "var(--m-warn)" : "var(--m-ok)";
@@ -530,7 +563,7 @@ function vResumo(){
   cm.forEach(c => { const k = c.data + "|" + (c.local || ""); const o = idas.get(k) || {data:c.data, local:c.local || "", t:0, n:0}; o.t += total(c); o.n++; idas.set(k, o); });
   const idHtml = idas.size ? `<div class="list">` + [...idas.values()].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 8).map(x => `<div class="row"><div class="grow"><div class="t">${esc(x.local || "Compras do dia")}</div><div class="m">${esc(fmtData(x.data))} · ${x.n} ${x.n > 1 ? "itens" : "item"}</div></div><span class="val">${brl(x.t)}</span></div>`).join("") + `</div>` : `<p class="empty">Nenhuma compra neste mês.</p>`;
 
-  return `<div class="bar">${mesnav()}</div>${w}${avisos}<div class="grid2"><div class="col">${secao("Onde está indo", onde)}${secao("Comparado ao mês passado", compHtml)}</div><div class="col">${secao("O que mais pesou", itHtml)}${secao("Por ida ao mercado", idHtml)}</div></div>`;
+  return `<div class="bar">${mesnav()}</div>${avisoBackup()}${w}${avisos}<div class="grid2"><div class="col">${secao("Onde está indo", onde)}${secao("Comparado ao mês passado", compHtml)}</div><div class="col">${secao("O que mais pesou", itHtml)}${secao("Por ida ao mercado", idHtml)}${secao("Últimos 6 meses", grafico6())}</div></div>`;
 }
 
 function vCompras(){
@@ -550,10 +583,13 @@ function vCompras(){
 }
 
 function vLista(){
-  let h = `<form class="bar rapido" id="rapido"><input id="rapido-in" name="nome" placeholder="Adicionar à lista" aria-label="Adicionar à lista" autocomplete="off" enterkeyhint="done"><button class="primary" type="submit">Adicionar</button></form>`;
-  if (!S.lista.length) return h + `<div class="grupo"><p class="empty">Sua lista está vazia. Escreva acima o que precisa comprar. Ao tocar no círculo, você anota o preço e vira uma compra.</p></div>`;
-  return h + `<div class="grupo"><div class="list">` + S.lista.map(x =>
-    `<div class="sw"><div class="row"><button class="tick" data-act="comprei" data-id="${esc(x.id)}" aria-label="Comprei ${esc(x.nome)}"></button><div class="grow" data-edit="1" data-act="edit-item" data-id="${esc(x.id)}"><div class="t">${esc(x.nome)}</div></div></div></div>`).join("") + `</div></div><p class="need" style="margin:10px 4px">Arraste um item para o lado para apagar.</p>`;
+  const nomes = [...new Set(S.compras.map(x => x.nome))];
+  const anterior = [...new Set(doMes(mesMove(hoje().slice(0, 7), -1)).map(c => c.nome))].filter(n => !S.lista.some(x => x.nome.toLowerCase() === n.toLowerCase()));
+  const repetir = anterior.length ? `<div class="opcoes"><button type="button" data-act="repetir">Repetir compras do mês passado (${anterior.length})<span>↻</span></button></div>` : "";
+  let h = `<form class="bar rapido" id="rapido"><input id="rapido-in" name="nome" list="dl-sug" placeholder="Adicionar à lista" aria-label="Adicionar à lista" autocomplete="off" enterkeyhint="done"><button class="primary" type="submit">Adicionar</button></form><datalist id="dl-sug">${nomes.map(n => `<option value="${esc(n)}">`).join("")}</datalist>`;
+  if (!S.lista.length) return h + `<div class="grupo"><p class="empty">Sua lista está vazia. Escreva acima o que precisa comprar. Ao tocar no círculo, você anota o preço e vira uma compra.</p></div>${repetir}`;
+  return h + `<div class="grupo"><div class="list">` + S.lista.map(x => { const u = historico(x.nome)[0];
+    return `<div class="sw"><div class="row"><button class="tick" data-act="comprei" data-id="${esc(x.id)}" aria-label="Comprei ${esc(x.nome)}"></button><div class="grow" data-edit="1" data-act="edit-item" data-id="${esc(x.id)}"><div class="t">${esc(x.nome)}</div>${u ? `<div class="m">Último: ${brl(u.preco)} em ${dm(u.data)}</div>` : ""}</div></div></div>`; }).join("") + `</div></div>${repetir}<p class="need" style="margin:10px 4px">Arraste um item para o lado para apagar.</p>`;
 }
 
 function vCategorias(){
@@ -637,10 +673,12 @@ function formCompra(c = {}){
     <datalist id="dl-n">${nomes.map(n => `<option value="${esc(n)}">`).join("")}</datalist>
     <div class="duo"><div class="field"><label for="fp">Preço (cada)</label><input id="fp" name="preco" inputmode="decimal" placeholder="0,00" required value="${c.preco ? fmtNum(c.preco) : ""}"></div>
     <div class="field"><label for="fq">Quantidade</label><input id="fq" name="qtd" inputmode="decimal" value="${c.qtd || 1}"></div></div>
+    <p class="need" id="hist" style="margin:-4px 4px 10px"></p>
     <div class="field"><label for="fc">Categoria</label><select id="fc" name="cat">${optCats(c.cat)}</select></div>
     <div class="duo"><div class="field"><label for="fd">Data</label><input id="fd" type="date" name="data" required value="${esc(c.data || ultimo.data || hoje())}"></div>
     <div class="field"><label for="fl">Onde (opcional)</label><input id="fl" name="local" list="dl-l" autocomplete="off" value="${esc(c.local ?? ultimo.local ?? "")}"></div></div>
     <datalist id="dl-l">${locais.map(n => `<option value="${esc(n)}">`).join("")}</datalist>
+    <p class="need" id="tot" style="margin:0 4px 10px"></p>
     ${botoes(novo ? `<div class="opcoes"><button type="submit" value="outro">Salvar e anotar outro<span>＋</span></button></div>` : opcao("del", "Excluir<span>🗑</span>", "danger"))}`,
   (fd, sub) => {
     const nome = String(fd.get("nome")).trim(), preco = parseBR(fd.get("preco")), qtd = parseBR(fd.get("qtd") || "1");
@@ -657,13 +695,26 @@ function formCompra(c = {}){
     if (sub && sub.value === "outro") { toast(`${nome} anotado`); formCompra({}); } else fechar();
     render();
   }, x => { if (x === "del") { fechar(); apagar("compras", c.id); } });
-  if (novo) frm.oninput = e => {
-    if (e.target.name !== "nome") return;
-    const m = [...S.compras].reverse().find(x => x.nome.toLowerCase() === e.target.value.trim().toLowerCase());
-    if (!m) return;
-    const f = frm.elements;
-    if (!f.preco.value) f.preco.value = fmtNum(m.preco);
-    if (!c.cat && S.categorias.some(k => k.id === m.cat)) f.cat.value = m.cat;
+  const atualiza = () => {
+    const f = frm.elements; if (!f.nome) return;
+    const h = $("#hist"); if (h) h.textContent = textoHist(f.nome.value);
+    const t = $("#tot"); if (!t) return;
+    const m = (f.data.value || hoje()).slice(0, 7), teto = S.config.teto || 0;
+    const este = Math.max(0, parseBR(f.preco.value) || 0) * Math.max(0, parseBR(f.qtd.value || "1") || 0);
+    const antes = soma(doMes(m).filter(x => x.id !== c.id)), depois = antes + este;
+    t.textContent = `Em ${mesNome(m)}: ${brl(antes)}${este ? ` → ${brl(depois)} com esta compra` : ""}${teto ? ` · ${depois > teto ? "passa " + brl(depois - teto) + " do teto" : "resta " + brl(teto - depois) + " do teto"}` : ""}`;
+  };
+  atualiza();
+  frm.oninput = e => {
+    if (novo && e.target.name === "nome") {
+      const m = [...S.compras].reverse().find(x => x.nome.toLowerCase() === e.target.value.trim().toLowerCase());
+      if (m) {
+        const f = frm.elements;
+        if (!f.preco.value) f.preco.value = fmtNum(m.preco);
+        if (!c.cat && S.categorias.some(k => k.id === m.cat)) f.cat.value = m.cat;
+      }
+    }
+    atualiza();
   };
 }
 
@@ -747,7 +798,7 @@ function formAjustes(){
     const [k, v] = x.split(":");
     if (k === "tema") { aplicarTema(v); formAjustes(); }
     else if (k === "cor") { aplicarCor(v); formAjustes(); }
-    else if (x === "backup") baixar("meu-mercado-backup-" + hoje() + ".json", JSON.stringify(S, null, 1), "application/json");
+    else if (x === "backup") { gravarLS(BK, Date.now()); baixar("meu-mercado-backup-" + hoje() + ".json", JSON.stringify(S, null, 1), "application/json"); }
     else if (x === "csv") baixar("meu-mercado-" + hoje() + ".csv", csv(), "text/csv");
   });
   $("#bkFile").onchange = e => {
@@ -774,6 +825,12 @@ const ACOES = {
   "nova-compra": () => formCompra({}),
   "edit-compra": id => formCompra(S.compras.find(x => x.id === id)),
   "novo-item": () => formItem({}),
+  "ajustes": () => formAjustes(),
+  "repetir": () => {
+    const ja = new Set(S.lista.map(x => x.nome.toLowerCase())); let n = 0;
+    new Map(doMes(mesMove(hoje().slice(0, 7), -1)).map(c => [c.nome.toLowerCase(), c.nome])).forEach((nome, k) => { if (!ja.has(k)) { S.lista.push(carimbar({id:uid(), nome})); n++; } });
+    persist(); render(); toast(n + (n === 1 ? " item adicionado" : " itens adicionados"));
+  },
   "edit-item": id => formItem(S.lista.find(x => x.id === id)),
   "comprei": id => { const x = S.lista.find(k => k.id === id); if (x) { const m = [...S.compras].reverse().find(k => k.nome.toLowerCase() === x.nome.toLowerCase()); formCompra({nome:x.nome, cat:x.cat || (m && m.cat), preco:x.preco || (m && m.preco), listaId:x.id}); } },
   "nova-cat": () => formCat({}),

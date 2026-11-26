@@ -64,6 +64,24 @@ const ok = (c, m) => { console.log((c ? "ok   " : "FALHA ") + m); if (!c) falhas
   // dados salvos
   await p.reload(); await aba("compras","Compras");
   ok((await txt()).includes("Sabão em pó"), "dados continuam depois de recarregar");
+  // histórico de preço e total do mês na hora de anotar
+  await p.click("[data-act=nova-compra]"); await p.fill("dialog [name=nome]", "Bombom"); await p.fill("dialog [name=preco]", "9,00");
+  ok((await p.innerText("#hist")).replace(/\u00a0/g, " ").includes("Último preço: R$ 8,00"), "mostra o último preço do item");
+  ok((await p.innerText("#tot")).replace(/\u00a0/g, " ").includes("R$ 63,00 → R$ 72,00"), "total do mês com a compra em andamento");
+  await p.fill("dialog [name=nome]", "Café"); await p.fill("dialog [name=preco]", "5,00");
+  const mp = await p.evaluate(() => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-10"; });
+  await p.fill("dialog [name=data]", mp); await p.click("dialog .primary");
+  // lista: sugestões e repetir o mês passado
+  await aba("lista","Lista");
+  ok(await p.$eval("#dl-sug", d => [...d.options].some(o => o.value === "Bombom")), "sugere itens já comprados");
+  await p.click("[data-act=repetir]"); ok((await txt()).includes("Café"), "repetir compras do mês passado");
+  ok((await txt()).includes("Último: R$ 5,00"), "item da lista mostra o último preço");
+  // resumo: gráfico e lembrete de backup
+  await aba("resumo","Resumo"); ok((await p.$$("svg[aria-label='Gasto dos últimos 6 meses']")).length === 1, "gráfico dos últimos 6 meses");
+  await p.evaluate(() => localStorage.setItem("meu-mercado-inicio", String(Date.now() - 10 * 86400000))); await p.reload();
+  ok((await txt()).includes("ainda não fez backup"), "lembra de fazer backup");
+  await p.click("[data-act=ajustes]"); await Promise.all([p.waitForEvent("download"), p.click("[data-x=backup]")]); await p.click("dialog [data-fechar]");
+  await p.reload(); ok(!(await txt()).includes("backup"), "depois do backup o lembrete some");
   ok(erros.length === 0, "sem erros no console" + (erros.length ? ": " + erros[0] : ""));
   await p.screenshot({ path: process.env.TELA || "/tmp/tela.png" });
   await b.close();
