@@ -154,6 +154,14 @@ button.danger{color:var(--bad)}
 .row .meter{margin-block:6px 4px}
 
 /* troca de mês: setas redondas e o nome do mês */
+.sw{position:relative;overflow:hidden;background:var(--bad)}
+.sw::after{content:"Apagar";position:absolute;right:18px;top:50%;transform:translateY(-50%);color:#fff;font-weight:600}
+.sw .row{background:var(--surface);z-index:1;padding-right:16px;touch-action:pan-y;transition:transform .2s}
+.sw .row.arrasta{transition:none}
+.sw .row::before{display:none}
+.sw:not(:first-child) .row::before{display:block}
+.rapido{flex-wrap:nowrap}
+.rapido input{flex:1;min-width:0}
 .mesnav{display:flex;align-items:center;gap:8px;flex:1}
 .mesnav h2{min-width:9.5em;text-align:center}
 .mesnav h2::first-letter{text-transform:uppercase}
@@ -542,19 +550,10 @@ function vCompras(){
 }
 
 function vLista(){
-  const itens = S.lista, est = itens.reduce((s, x) => s + (x.preco || 0), 0);
-  const teto = S.config.teto || 0, gasto = soma(doMes(hoje().slice(0, 7)));
-  let h = `<div class="bar"><h2>A comprar</h2><button class="primary mais" data-act="novo-item" aria-label="Novo item">+<span class="txt"> Item</span></button></div>`;
-  if (!itens.length) return h + `<div class="grupo"><p class="empty">Sua lista está vazia. Anote o que precisa comprar; ao marcar como comprado, ele vira uma compra.</p></div>`;
-  h += `<div class="notice"><span>Estimado da lista: <b>${brl(est)}</b>${teto ? ` · resta do teto do mês: <b>${brl(Math.max(0, teto - gasto))}</b>${est > teto - gasto ? " (a lista passa)" : ""}` : ""}</span></div>`;
-  const grupos = new Map();
-  itens.forEach(x => { if (!grupos.has(x.cat)) grupos.set(x.cat, []); grupos.get(x.cat).push(x); });
-  grupos.forEach((xs, id) => {
-    const k = cat(id);
-    h += `<div class="dia-h"><span>${esc(k.nome)}</span><span class="num">${brl(xs.reduce((s, x) => s + (x.preco || 0), 0))}</span></div><div class="grupo"><div class="list">` + xs.map(x =>
-      `<div class="row"><button class="tick" data-act="comprei" data-id="${esc(x.id)}" aria-label="Comprei ${esc(x.nome)}"></button><div class="grow" data-edit="1" data-act="edit-item" data-id="${esc(x.id)}"><div class="t">${esc(x.nome)}</div></div>${x.preco ? `<span class="val">${brl(x.preco)}</span>` : ""}</div>`).join("") + `</div></div>`;
-  });
-  return h;
+  let h = `<form class="bar rapido" id="rapido"><input id="rapido-in" name="nome" placeholder="Adicionar à lista" aria-label="Adicionar à lista" autocomplete="off" enterkeyhint="done"><button class="primary" type="submit">Adicionar</button></form>`;
+  if (!S.lista.length) return h + `<div class="grupo"><p class="empty">Sua lista está vazia. Escreva acima o que precisa comprar. Ao tocar no círculo, você anota o preço e vira uma compra.</p></div>`;
+  return h + `<div class="grupo"><div class="list">` + S.lista.map(x =>
+    `<div class="sw"><div class="row"><button class="tick" data-act="comprei" data-id="${esc(x.id)}" aria-label="Comprei ${esc(x.nome)}"></button><div class="grow" data-edit="1" data-act="edit-item" data-id="${esc(x.id)}"><div class="t">${esc(x.nome)}</div></div></div></div>`).join("") + `</div></div><p class="need" style="margin:10px 4px">Arraste um item para o lado para apagar.</p>`;
 }
 
 function vCategorias(){
@@ -567,6 +566,34 @@ function vCategorias(){
   return h;
 }
 
+// arrastar um item da lista para a esquerda apaga (com Desfazer)
+(() => {
+  let r = null, x0 = 0, y0 = 0, dx = 0, mexeu = false;
+  const v = $("#view");
+  v.addEventListener("pointerdown", e => { r = e.target.closest(".sw .row"); if (r && !e.target.closest("button")) { x0 = e.clientX; y0 = e.clientY; dx = 0; mexeu = false; } else r = null; });
+  v.addEventListener("pointermove", e => {
+    if (!r) return;
+    dx = e.clientX - x0;
+    if (!mexeu && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(e.clientY - y0)) { mexeu = true; r.classList.add("arrasta"); try { r.setPointerCapture(e.pointerId); } catch(_) {} }
+    if (mexeu) r.style.transform = `translateX(${Math.min(0, dx)}px)`;
+  });
+  const solta = () => {
+    if (!r) return;
+    const el = r, id = el.querySelector("[data-id]").dataset.id, apaga = mexeu && dx < -Math.min(100, el.offsetWidth / 3);
+    r = null; el.classList.remove("arrasta");
+    if (apaga) { el.style.transform = "translateX(-110%)"; setTimeout(() => apagar("lista", id), 180); }
+    else el.style.transform = "";
+    if (mexeu) { const bloqueia = ev => { ev.stopPropagation(); ev.preventDefault(); }; v.addEventListener("click", bloqueia, {capture:true, once:true}); setTimeout(() => v.removeEventListener("click", bloqueia, true), 50); }
+  };
+  v.addEventListener("pointerup", solta); v.addEventListener("pointercancel", solta);
+})();
+document.addEventListener("submit", e => {
+  if (e.target.id !== "rapido") return;
+  e.preventDefault();
+  const nome = e.target.nome.value.trim(); if (!nome) return;
+  S.lista.push(carimbar({id:uid(), nome})); persist(); render();
+  const i = $("#rapido-in"); if (i) i.focus();
+});
 const V = {resumo:vResumo, compras:vCompras, lista:vLista, categorias:vCategorias};
 function aba(){ const t = (location.hash || "#resumo").slice(1); return ABAS[t] ? t : "resumo"; }
 let abaAnterior = "";
@@ -641,19 +668,13 @@ function formCompra(c = {}){
 }
 
 function formItem(x = {}){
-  const novo = !x.id;
-  abrir(`<h2 tabindex="-1">${novo ? "Novo item da lista" : "Editar item"}</h2>
+  abrir(`<h2 tabindex="-1">Editar item</h2>
     <div class="field"><label for="in">O que comprar</label><input id="in" name="nome" required autocomplete="off" value="${esc(x.nome || "")}"></div>
-    <div class="duo"><div class="field"><label for="ic">Categoria</label><select id="ic" name="cat">${optCats(x.cat)}</select></div>
-    <div class="field"><label for="ip">Preço estimado</label><input id="ip" name="preco" inputmode="decimal" placeholder="opcional" value="${x.preco ? fmtNum(x.preco) : ""}"></div></div>
-    ${botoes(novo ? `<div class="opcoes"><button type="submit" value="outro">Salvar e anotar outro<span>＋</span></button></div>` : opcao("del", "Excluir<span>🗑</span>", "danger"))}`,
-  (fd, sub) => {
+    ${botoes(opcao("del", "Excluir<span>🗑</span>", "danger"))}`,
+  fd => {
     const nome = String(fd.get("nome")).trim(); if (!nome) return erro("Escreva o que precisa comprar.");
-    const p = parseBR(fd.get("preco")), v = {nome, cat:fd.get("cat"), preco:p > 0 ? p : 0};
-    if (novo) S.lista.push(carimbar({id:uid(), ...v})); else Object.assign(x, v, {_t:Date.now()});
-    persist();
-    if (sub && sub.value === "outro") { toast(`${nome} na lista`); formItem({cat:v.cat}); } else fechar();
-    render();
+    Object.assign(x, {nome, _t:Date.now()});
+    persist(); fechar(); render();
   }, k => { if (k === "del") { fechar(); apagar("lista", x.id); } });
 }
 
@@ -754,7 +775,7 @@ const ACOES = {
   "edit-compra": id => formCompra(S.compras.find(x => x.id === id)),
   "novo-item": () => formItem({}),
   "edit-item": id => formItem(S.lista.find(x => x.id === id)),
-  "comprei": id => { const x = S.lista.find(k => k.id === id); if (x) formCompra({nome:x.nome, cat:x.cat, preco:x.preco, listaId:x.id}); },
+  "comprei": id => { const x = S.lista.find(k => k.id === id); if (x) { const m = [...S.compras].reverse().find(k => k.nome.toLowerCase() === x.nome.toLowerCase()); formCompra({nome:x.nome, cat:x.cat || (m && m.cat), preco:x.preco || (m && m.preco), listaId:x.id}); } },
   "nova-cat": () => formCat({}),
   "edit-cat": id => formCat(S.categorias.find(x => x.id === id))
 };

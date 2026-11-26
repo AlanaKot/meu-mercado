@@ -10,7 +10,7 @@ No celular: abra o site, toque em Compartilhar e **Adicionar à Tela de Início*
 
 1. **Resumo:** toque no quadro verde para definir o **teto do mês** (e, se quiser, o da semana). O quadro mostra quanto já gastou, quanto resta e a previsão do mês no ritmo atual.
 2. **Compras:** toque em **+ Compra** e anote item, preço, quantidade, categoria, data e onde comprou. "Salvar e anotar outro" agiliza na hora do caixa. O app lembra o preço e a categoria de itens que você já comprou.
-3. **Lista:** o que precisa comprar. O círculo marca como comprado e abre a compra já preenchida. Mostra o estimado da lista contra o que resta do teto.
+3. **Lista:** o que precisa comprar, só o nome: escreva na caixa do topo e toque em Adicionar. O círculo marca como comprado e abre a compra com o nome já preenchido; você coloca o preço.
 4. **Categorias:** Alimentos, Limpeza, Doce e Diversos já vêm criadas; crie outras. O limite mensal de cada uma é opcional.
 
 ## Onde estou pecando
