@@ -294,6 +294,7 @@ dialog.largo{width:min(980px,calc(100vw - 32px))}
 /* lista de opções dentro de uma janela (ex.: Backup), no estilo das listas do iPhone */
 .opcoes{display:flex;flex-direction:column;background:var(--fill);border-radius:12px;overflow:hidden}
 .opcoes button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;border-radius:0;padding:12px 16px;min-height:44px;color:var(--accent);font:inherit}
+.opcoes.repetir{background:var(--surface);margin-top:16px}
 .opcoes button+button{border-top:.5px solid var(--line)}
 .opcoes button span{color:var(--muted);font-size:1.2em}
 .opcoes button.danger{color:var(--bad)}
@@ -585,7 +586,7 @@ function vCompras(){
 function vLista(){
   const nomes = [...new Set(S.compras.map(x => x.nome))];
   const anterior = [...new Set(doMes(mesMove(hoje().slice(0, 7), -1)).map(c => c.nome))].filter(n => !S.lista.some(x => x.nome.toLowerCase() === n.toLowerCase()));
-  const repetir = anterior.length ? `<div class="opcoes"><button type="button" data-act="repetir">Repetir compras do mês passado (${anterior.length})<span>↻</span></button></div>` : "";
+  const repetir = anterior.length ? `<div class="opcoes repetir"><button type="button" data-act="repetir">Repetir compras do mês passado (${anterior.length})<span>↻</span></button></div>` : "";
   let h = `<form class="bar rapido" id="rapido"><input id="rapido-in" name="nome" list="dl-sug" placeholder="Adicionar à lista" aria-label="Adicionar à lista" autocomplete="off" enterkeyhint="done"><button class="primary" type="submit">Adicionar</button></form><datalist id="dl-sug">${nomes.map(n => `<option value="${esc(n)}">`).join("")}</datalist>`;
   if (!S.lista.length) return h + `<div class="grupo"><p class="empty">Sua lista está vazia. Escreva acima o que precisa comprar. Ao tocar no círculo, você anota o preço e vira uma compra.</p></div>${repetir}`;
   return h + `<div class="grupo"><div class="list">` + S.lista.map(x => { const u = historico(x.nome)[0];
