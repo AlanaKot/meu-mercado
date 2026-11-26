@@ -346,6 +346,7 @@ dialog.largo{width:min(980px,calc(100vw - 32px))}
   .toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
   .mesnav{gap:4px}
   .mesnav h2{min-width:0;flex:1;font-size:1.2rem}
+  button.mais .txt{display:none}
   button.mais{width:44px;padding:0 0 3px;font-size:1.6rem;font-weight:400;line-height:1;flex:none}
   .wg,.wg.quatro{grid-template-columns:repeat(2,minmax(0,1fr))}
   .w.larga{grid-column:1/-1;min-height:0}
@@ -526,7 +527,7 @@ function vResumo(){
 
 function vCompras(){
   const lista = doMes(mes).filter(c => !filtro || c.cat === filtro).sort((a, b) => b.data.localeCompare(a.data) || (b._t || 0) - (a._t || 0));
-  let h = `<div class="bar">${mesnav()}<button class="primary mais" data-act="nova-compra" aria-label="Nova compra">+ Compra</button></div>`;
+  let h = `<div class="bar">${mesnav()}<button class="primary mais" data-act="nova-compra" aria-label="Nova compra">+<span class="txt"> Compra</span></button></div>`;
   h += `<div class="bar filtro-linha"><div class="filter"><select id="filtro" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option>${S.categorias.map(c => `<option value="${esc(c.id)}"${c.id === filtro ? " selected" : ""}>${esc(c.nome)}</option>`).join("")}</select></div><span class="sub num">${lista.length} ${lista.length === 1 ? "item" : "itens"} · ${brl(soma(lista))}</span></div>`;
   if (!lista.length) return h + `<div class="grupo"><p class="empty">Nenhuma compra aqui. Toque em <b>+ Compra</b> para anotar.</p></div>`;
   const dias = new Map();
@@ -543,7 +544,7 @@ function vCompras(){
 function vLista(){
   const itens = S.lista, est = itens.reduce((s, x) => s + (x.preco || 0), 0);
   const teto = S.config.teto || 0, gasto = soma(doMes(hoje().slice(0, 7)));
-  let h = `<div class="bar"><h2>A comprar</h2><button class="primary mais" data-act="novo-item" aria-label="Novo item">+ Item</button></div>`;
+  let h = `<div class="bar"><h2>A comprar</h2><button class="primary mais" data-act="novo-item" aria-label="Novo item">+<span class="txt"> Item</span></button></div>`;
   if (!itens.length) return h + `<div class="grupo"><p class="empty">Sua lista está vazia. Anote o que precisa comprar; ao marcar como comprado, ele vira uma compra.</p></div>`;
   h += `<div class="notice"><span>Estimado da lista: <b>${brl(est)}</b>${teto ? ` · resta do teto do mês: <b>${brl(Math.max(0, teto - gasto))}</b>${est > teto - gasto ? " (a lista passa)" : ""}` : ""}</span></div>`;
   const grupos = new Map();
@@ -558,7 +559,7 @@ function vLista(){
 
 function vCategorias(){
   const gm = new Map(porCat(doMes(mes)).map(x => [x.id, x.total]));
-  let h = `<div class="bar">${mesnav()}<button class="primary mais" data-act="nova-cat" aria-label="Nova categoria">+ Categoria</button></div>`;
+  let h = `<div class="bar">${mesnav()}<button class="primary mais" data-act="nova-cat" aria-label="Nova categoria">+<span class="txt"> Categoria</span></button></div>`;
   h += `<div class="grupo"><div class="list">` + S.categorias.map(c => {
     const t = gm.get(c.id) || 0, p = c.limite ? t / c.limite : 0;
     return `<div class="row" data-edit="1" data-act="edit-cat" data-id="${esc(c.id)}"><span class="dot" style="background:${esc(c.cor)}"></span><div class="grow"><div class="t">${esc(c.nome)}</div><div class="m">${c.limite ? `${brl(t)} de ${brl(c.limite)}` : "Sem limite"}</div>${c.limite ? medidor(p, corLimite(p)) : ""}</div><span class="val">${brl(t)}</span></div>`;

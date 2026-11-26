@@ -13,8 +13,11 @@ const ok = (c, m) => { console.log((c ? "ok   " : "FALHA ") + m); if (!c) falhas
   // teto
   await p.click(".w.tinta"); await p.fill("[name=m]", "1.000,00"); await p.fill("[name=s]", "250"); await p.click("dialog .primary");
   ok((await txt()).includes("Resta R$ 1.000,00"), "teto do mês aparece");
+  // botão "+ Compra" cabe na tela do celular
+  await aba("compras","Compras");
+  ok(await p.$eval("[data-act=nova-compra]", b => { const r = b.getBoundingClientRect(); return r.right <= innerWidth && r.width <= 60; }), "botão + Compra cabe na tela");
   // compra
-  await aba("compras","Compras"); await p.click("[data-act=nova-compra]");
+  await p.click("[data-act=nova-compra]");
   await p.fill("[name=nome]", "Sabão em pó"); await p.fill("[name=preco]", "12,50"); await p.fill("[name=qtd]", "2");
   const limp = await p.$eval("[name=cat]", s => [...s.options].find(o => o.text === "Limpeza").value); await p.selectOption("[name=cat]", limp);
   await p.fill("[name=local]", "Atacadão"); await p.click('dialog button[value=outro]');
