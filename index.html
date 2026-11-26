@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Meu Mercado</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mercado">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script>
+// aplica o tema escolhido antes de desenhar a página, para não piscar claro
+try { const t = localStorage.getItem("meu-mercado-tema"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+  const c = localStorage.getItem("meu-mercado-cor") || "verde"; document.documentElement.dataset.cor = c; } catch(e){}
+</script>
+<style>
+/* Visual no padrão dos apps do iPhone, igual ao Meu Semestre: título grande, listas agrupadas em quadros sobre fundo cinza,
+   barra de abas embaixo no celular (pílula flutuante no topo em telas largas). A cor do app é escolhida no botão Aparência (azul do iPhone 14 por padrão). */
+:root{
+  --bg:#f2f2f7; --surface:#ffffff; --surface-2:#e9e9ee; --line:rgba(60,60,67,.2);
+  --fg:#000000; --muted:#6c6c70; --ink:#8e8e93;
+  --accent:var(--c-claro); --accent-fill:var(--c-fundo); --accent-ink:#ffffff; --accent-bg:var(--c-claro-bg); --accent-txt:var(--c-claro);
+  --fill:rgba(118,118,128,.12); --fill-2:rgba(118,118,128,.24);
+  --barra:rgba(249,249,249,.82); --folha:#f2f2f7; --campo:#ffffff;
+  --ok:#1a7f3c; --warn:#946200; --bad:#c9281e;
+  --ok-bg:rgba(52,199,89,.16); --warn-bg:rgba(255,159,10,.18); --bad-bg:rgba(255,59,48,.13);
+  --m-ok:#34c759; --m-warn:#ff9f0a; --m-bad:#ff3b30;
+  --f-body:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-display:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-num:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,sans-serif;
+  --r:14px; --mola:cubic-bezier(.16,1,.3,1);
+  /* cor do app (azul é a padrão). Cada cor tem: texto no claro, texto no escuro, fundo de botão e o degradê do quadro principal */
+  --c-claro:#2d5f8b; --c-claro-bg:rgba(86,134,178,.16); --c-escuro:#a9c7e2; --c-escuro-bg:rgba(160,190,218,.22); --c-fundo:#3a6c9a;
+  --w-1:#c9d9e8; --w-2:#9db6cd; --w-ink:#10263c;
+}
+:root[data-cor="verde"]{--c-claro:#1f7a45; --c-claro-bg:rgba(31,122,69,.14); --c-escuro:#6fd49a; --c-escuro-bg:rgba(111,212,154,.2); --c-fundo:#2a8a52; --w-1:#c7e6d3; --w-2:#8fc7a6; --w-ink:#0d2c1a}
+:root[data-cor="bordo"]{--c-claro:#8f2440; --c-claro-bg:rgba(143,36,64,.12); --c-escuro:#e8607f; --c-escuro-bg:rgba(232,96,127,.2); --c-fundo:#a12a4a; --w-1:#a42d4d; --w-2:#6f1a31; --w-ink:#ffffff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#000000; --surface:#1c1c1e; --surface-2:#2c2c2e; --line:rgba(84,84,88,.6);
+  --fg:#ffffff; --muted:#98989f; --ink:#8e8e93;
+  --accent:var(--c-escuro); --accent-fill:var(--c-fundo); --accent-ink:#ffffff; --accent-bg:var(--c-escuro-bg); --accent-txt:var(--c-escuro);
+  --fill:rgba(118,118,128,.24); --fill-2:rgba(118,118,128,.36);
+  --barra:rgba(22,22,24,.8); --folha:#1c1c1e; --campo:#2c2c2e;
+  --ok:#30d158; --warn:#ffb340; --bad:#ff6961;
+  --ok-bg:rgba(48,209,88,.18); --warn-bg:rgba(255,159,10,.2); --bad-bg:rgba(255,69,58,.2);
+  --m-ok:#30d158; --m-warn:#ff9f0a; --m-bad:#ff453a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#000000; --surface:#1c1c1e; --surface-2:#2c2c2e; --line:rgba(84,84,88,.6);
+  --fg:#ffffff; --muted:#98989f; --ink:#8e8e93;
+  --accent:var(--c-escuro); --accent-fill:var(--c-fundo); --accent-ink:#ffffff; --accent-bg:var(--c-escuro-bg); --accent-txt:var(--c-escuro);
+  --fill:rgba(118,118,128,.24); --fill-2:rgba(118,118,128,.36);
+  --barra:rgba(22,22,24,.8); --folha:#1c1c1e; --campo:#2c2c2e;
+  --ok:#30d158; --warn:#ffb340; --bad:#ff6961;
+  --ok-bg:rgba(48,209,88,.18); --warn-bg:rgba(255,159,10,.2); --bad-bg:rgba(255,69,58,.2);
+  --m-ok:#30d158; --m-warn:#ff9f0a; --m-bad:#ff453a; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+img{max-width:100%}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.4;letter-spacing:-.01em;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;scrollbar-color:var(--fill-2) transparent}
+::selection{background:var(--accent-bg)}
+input,textarea{caret-color:var(--accent)}
+svg.i{width:1.1em;height:1.1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,[role=button]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* cabeçalho: data pequena, título grande da aba e ações */
+header{padding-top:calc(env(safe-area-inset-top,0px) + 14px)}
+/* faixa sólida, da cor do fundo, atrás da hora e da bateria (app instalado no iPhone): o conteúdo rolado some por baixo dela */
+body::after{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);z-index:30;pointer-events:none;background:var(--bg)}
+.dt{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:32px}
+.dt .filter{gap:10px}
+/* botões redondos (topo e setas do mês), como os ícones da barra dos apps do iPhone */
+button.topo-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;min-width:38px;min-height:38px;padding:0;border:0;border-radius:50%;background:var(--fill);color:var(--accent);cursor:pointer;flex:none}
+button.topo-btn:hover{background:var(--fill-2)}
+button.topo-btn svg{width:20px;height:20px}
+#hoje{font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+h1{font-family:var(--f-display);font-weight:700;font-size:2.125rem;line-height:1.15;letter-spacing:-.022em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:.8rem}
+#status{text-align:center;margin-block:0;padding-bottom:28px}
+.erro{color:var(--bad);font-size:.9rem;font-weight:500;margin:0}
+
+/* abas: pílula flutuante no topo (telas largas) */
+nav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:6;display:flex;gap:2px;width:fit-content;max-width:calc(100% - 32px);margin:10px auto 0;padding:4px;border-radius:999px;
+  background:var(--barra);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  box-shadow:0 0 0 .5px var(--line),0 10px 30px -14px rgba(0,0,0,.35)}
+nav a{padding:8px 16px;border-radius:999px;color:var(--fg);text-decoration:none;font-weight:500;font-size:.94rem;white-space:nowrap}
+nav a:hover{background:var(--fill)}
+nav a[aria-current="page"]{background:var(--accent-fill);color:var(--accent-ink);font-weight:600}
+nav svg{display:none}
+
+main{padding-block:16px 28px}
+h2{font-family:var(--f-display);font-weight:700;font-size:1.375rem;letter-spacing:-.02em;margin:0;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:700;font-size:1.25rem;letter-spacing:-.02em;margin:0}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;margin-bottom:12px}
+.bar>*{min-width:0;max-width:100%}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:26px 18px}
+.grid2>*{min-width:0}
+.col{display:flex;flex-direction:column;gap:26px}
+/* seção: o título fica fora e o conteúdo vai dentro do quadro (.grupo), como as listas agrupadas do iPhone */
+.sec>.bar{margin:0 4px 8px;min-height:36px}
+.grupo{background:var(--surface);border-radius:var(--r);padding:4px 16px;overflow:hidden}
+.grupo>.empty,.grupo>.need{padding:12px 0;margin:0}
+.grupo>.list{margin-right:-16px}
+.grupo>.list>.row{padding-right:16px}
+.label{font-size:.8rem;text-transform:uppercase;letter-spacing:.02em;color:var(--muted);font-weight:500}
+.num{font-variant-numeric:tabular-nums}
+.need{font-size:.84rem;color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+button{font:inherit;font-weight:600;font-size:.94rem;letter-spacing:-.01em;cursor:pointer;border:0;border-radius:999px;background:var(--fill);color:var(--accent);padding:7px 14px}
+button:hover{background:var(--fill-2)}
+button:active{opacity:.6}
+button:disabled{opacity:.4;cursor:default}
+button.primary{background:var(--accent-fill);color:var(--accent-ink)}
+button.primary:hover{background:var(--accent-fill);filter:brightness(1.08)}
+button.ghost{background:transparent;color:var(--accent);padding:6px 8px;font-weight:400;font-size:1rem}
+button.ghost:hover{background:var(--fill)}
+button.danger{color:var(--bad)}
+
+.notice{background:var(--surface);border-radius:var(--r);padding:12px 12px 12px 16px;color:var(--muted);font-size:.87rem;margin-bottom:16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.notice button{flex:none}
+.empty{color:var(--muted);font-size:.94rem;padding:8px 0}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none}
+.list{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:12px;padding:11px 0;position:relative;min-height:44px}
+.row:not(:first-child)::before{content:"";position:absolute;top:0;right:0;left:var(--rec,0px);border-top:.5px solid var(--line)}
+.row:has(>.dot){--rec:22px}
+.row:has(>.pn){--rec:42px}
+/* bolinha numerada dos primeiros passos; vira um "feito" quando o passo está pronto */
+.pn{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--fill);color:var(--muted);font:700 .94rem var(--f-num)}
+.pn.ok{background:var(--accent-fill);color:var(--accent-ink)}
+.row .grow{flex:1;min-width:0}
+.row .t{font-size:1.0625rem;letter-spacing:-.02em;overflow-wrap:anywhere}
+.row .m{color:var(--muted);font-size:.84rem;overflow-wrap:anywhere}
+.row[data-edit]{cursor:pointer}
+.val{font-family:var(--f-num);font-weight:600;font-size:1.0625rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:.78rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--fill);color:var(--muted);white-space:nowrap}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.bad{background:var(--bad-bg);color:var(--bad)}
+/* barra de progresso do limite: verde, amarelo perto do limite, vermelho quando passa */
+.meter{height:6px;border-radius:3px;background:var(--fill);overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;border-radius:3px}
+.row .meter{margin-block:6px 4px}
+
+/* troca de mês: setas redondas e o nome do mês */
+.mesnav{display:flex;align-items:center;gap:8px;flex:1}
+.mesnav h2{min-width:9.5em;text-align:center}
+.mesnav h2::first-letter{text-transform:uppercase}
+.mesnav .seta{font-size:1.4rem;font-weight:400;line-height:1;padding-bottom:3px}
+.voltar{margin:-6px 0 10px -8px}
+
+/* widgets do topo do Painel */
+.wg{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:26px}
+.wg.quatro{grid-template-columns:1.6fr 1fr 1fr 1fr}
+.w{background:var(--surface);border-radius:22px;padding:14px 16px;min-height:112px;display:flex;flex-direction:column;min-width:0;text-align:left;color:var(--fg);font-weight:400;font-size:1rem}
+.w>span{display:block}
+.w .k{display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:.82rem;font-weight:600;color:var(--accent)}
+.w .k .ir{margin-left:auto;color:var(--ink);font-weight:400;font-size:1.1rem;line-height:1}
+.w .gr{font-family:var(--f-num);font-size:1.5rem;font-weight:700;letter-spacing:-.02em;line-height:1.1;margin-top:auto;padding-top:10px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.w .gr.bad{color:var(--bad)}
+.w .p{margin-top:3px;font-size:.84rem;color:var(--muted);overflow-wrap:anywhere}
+.w.tinta{background:linear-gradient(160deg,var(--w-1),var(--w-2));color:var(--w-ink)}
+.w.tinta .k,.w.tinta .p{color:var(--w-ink);opacity:.8}
+.w.tinta .gr{font-size:2.25rem;line-height:1}
+button.w.w{border-radius:22px;padding:14px 16px;background:var(--surface)}
+button.w.w:hover{background:var(--surface);filter:brightness(.97)}
+.w .meter{margin-top:8px}
+
+/* gasto por dia: uma coluna por dia do mês */
+.barras{display:flex;align-items:flex-end;gap:2px;height:96px;margin-top:12px}
+.barras i{flex:1;min-width:0;border-radius:3px 3px 0 0;background:var(--accent-fill);opacity:.45}
+.barras i.hoje{opacity:1}
+.barras i.vazio{background:var(--fill-2);opacity:1}
+.eixo{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-top:4px;font-variant-numeric:tabular-nums}
+
+/* cabeçalho de cada dia na lista de gastos */
+.dia-h{display:flex;justify-content:space-between;gap:12px;margin:20px 16px 7px;font-size:.8rem;text-transform:uppercase;letter-spacing:.02em;color:var(--muted);font-weight:500}
+.dia-h:first-child{margin-top:4px}
+
+.foto{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none;background:var(--fill)}
+.foto.sem{display:grid;place-items:center;color:var(--muted)}
+.foto.sem svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.foto.peq{width:40px;height:40px;border-radius:9px}
+.foto.grande{width:100%;height:auto;max-height:260px;object-fit:contain;border-radius:14px;display:block;margin-bottom:6px}
+.row.desejo{align-items:flex-start}
+.mover{display:inline-flex;gap:6px}
+.mover .topo-btn{font-size:1.1rem;font-weight:600}
+.reordenar{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:22px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{background:var(--surface);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card .t{font-size:1.0625rem;letter-spacing:-.02em;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.card .bar .t::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:8px}
+.big{font-family:var(--f-num);font-weight:700;font-size:1.5rem;font-variant-numeric:tabular-nums}
+.card .meter{margin-top:0}
+
+/* controle segmentado (Aparência) */
+.seg{display:inline-flex;background:var(--fill);border-radius:9px;padding:2px}
+.seg button{border-radius:7px;background:transparent;color:var(--fg);font-weight:500;padding:5px 16px}
+.seg button:hover{background:transparent}
+.seg button:focus-visible{outline-offset:-2px}
+.seg.cheia{display:flex}
+.seg.cheia button{flex:1;padding-left:4px;padding-right:4px}
+.seg button[aria-pressed="true"],.seg button[aria-pressed="true"]:hover{background:var(--surface);font-weight:600;box-shadow:0 3px 8px rgba(0,0,0,.12),0 1px 1px rgba(0,0,0,.04)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{background:#636366}}
+:root[data-theme="dark"] .seg button[aria-pressed="true"]{background:#636366}
+
+/* formulários: folha */
+dialog{border:0;border-radius:14px;background:var(--folha);color:var(--fg);padding:0;width:min(480px,calc(100vw - 32px));max-height:calc(100dvh - 40px);box-shadow:0 24px 60px -20px rgba(0,0,0,.5);overscroll-behavior:contain}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+/* com uma janela aberta, a página de trás fica parada (a rolagem fica só dentro da janela) */
+html:has(dialog[open]){overflow:hidden}
+body.travada{position:fixed;left:0;right:0;overflow:hidden}
+dialog form{padding:20px 18px 18px;display:flex;flex-direction:column;gap:14px}
+dialog h2{font-size:1.25rem}
+dialog h2:focus{outline:none}
+dialog p{margin:0}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.8rem;font-weight:500;color:var(--muted);padding-left:4px}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--campo);border:0;border-radius:10px;padding:9px 12px;width:100%}
+.bar select{background:var(--surface)}
+/* iPhone: campo de data vem mais alto e mais largo que os outros; aqui ficam iguais */
+input:not([type=radio]):not([type=file]),select{height:42px}
+input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;line-height:1.4;text-align:left}
+input::-webkit-date-and-time-value{text-align:left;margin:0;min-height:1.4em}
+textarea{height:auto;min-height:120px;resize:vertical;font-size:.94rem}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.duo>*{min-width:0}
+.duo label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.swatches label{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent;display:block;padding:0}
+.swatches input{position:absolute;opacity:0;width:1px;height:1px}
+.swatches input:checked+label{border-color:var(--fg);box-shadow:inset 0 0 0 3px var(--folha)}
+.swatches input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
+.actions{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}
+.actions .r{display:flex;gap:8px;flex-wrap:wrap}
+.actions button{padding:10px 18px}
+/* botão de escolher arquivo com a cara do app (o campo de arquivo de verdade fica escondido) */
+.field label.arquivo{display:flex;font-size:inherit;margin:0;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:999px;background:var(--fill);color:var(--accent);font-weight:600;cursor:pointer;text-align:center}
+#bkFile:focus-visible+.arquivo{outline:2px solid var(--accent);outline-offset:2px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--barra);color:var(--fg);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);box-shadow:0 0 0 .5px var(--line),0 10px 30px -10px rgba(0,0,0,.35);
+  padding:10px 18px;border-radius:999px;font-size:.94rem;font-weight:500;z-index:40;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+.toast button{min-height:0!important;padding:0 0 0 12px!important;font-weight:600;background:none}
+/* chave de ligar e desligar, como as do iPhone (aba Contas) */
+.chave{cursor:pointer}
+.chave input[type=checkbox]{-webkit-appearance:none;appearance:none;width:51px!important;height:31px!important;padding:0!important;border-radius:999px;background:var(--fill-2);position:relative;flex:none;cursor:pointer;margin:0}
+.chave input[type=checkbox]::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25)}
+.chave input[type=checkbox]:checked{background:var(--m-ok)}
+.chave input[type=checkbox]:checked::after{transform:translateX(20px)}
+.conta{margin-bottom:12px}
+/* título de quadro do Painel que recolhe e abre com um toque */
+button.dobra{background:none;padding:0;color:var(--fg);font:inherit;letter-spacing:inherit;display:inline-flex;align-items:center;gap:8px;border-radius:8px;text-align:left}
+button.dobra:hover{background:none}
+.dobra span{color:var(--ink);font-weight:400;display:inline-block;transform:rotate(90deg)}
+.dobra[aria-expanded="false"] span{transform:none}
+/* resumo do ano: tabela de categoria por mês, que rola para o lado dentro da janela */
+dialog.largo{width:min(980px,calc(100vw - 32px))}
+.tbl-wrap{overflow-x:auto}
+.ano{border-collapse:collapse;font-size:.84rem;font-variant-numeric:tabular-nums;white-space:nowrap;width:100%}
+.ano th,.ano td{padding:7px 8px;text-align:right;border-bottom:.5px solid var(--line);font-weight:400}
+.ano th:first-child{text-align:left;position:sticky;left:0;background:var(--folha);max-width:36vw;overflow:hidden;text-overflow:ellipsis}
+.ano thead th{color:var(--muted);font-weight:500}
+.ano thead th.sel{color:var(--accent);font-weight:700}
+.ano td:last-child,.ano tfoot th,.ano tfoot td{font-weight:700}
+.ano tfoot tr:last-child>*{border-bottom:0}
+/* valor opcional da parte de cada pessoa, no formulário da conta */
+.pes input:not([type=checkbox]){width:104px;flex:none;background:var(--fill);text-align:right}
+/* atalhos para repetir os gastos mais comuns */
+.favs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.favs>span{flex:1 0 100%}
+.favs button{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grupo select{background:var(--fill);width:auto;max-width:52%;flex:none}
+.caixa{background:var(--campo);border-radius:10px;padding-inline:12px}
+.field label.caixa{padding-inline:12px}
+/* lista de opções dentro de uma janela (ex.: Backup), no estilo das listas do iPhone */
+.opcoes{display:flex;flex-direction:column;background:var(--fill);border-radius:12px;overflow:hidden}
+.opcoes button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;border-radius:0;padding:12px 16px;min-height:44px;color:var(--accent);font:inherit}
+.opcoes button+button{border-top:.5px solid var(--line)}
+.opcoes button span{color:var(--muted);font-size:1.2em}
+.opcoes button.danger{color:var(--bad)}
+.opcoes button:hover{background:var(--fill)}
+/* dois botões do mesmo tamanho, lado a lado (Cancelar e Salvar) */
+.actions .r.iguais{flex:1;flex-wrap:nowrap}
+.actions .r.iguais button{flex:1}
+/* busca e revisão do extrato */
+.achado{width:100%;text-align:left;background:none;border:0;border-bottom:.5px solid var(--line);border-radius:0;color:inherit;font:inherit;cursor:pointer;min-height:44px;padding-inline:0}
+.achado:hover{background:var(--fill)}
+.achado mark{background:var(--warn-bg);color:inherit;border-radius:2px;padding:0 1px}
+.imp{padding:10px 0;border-bottom:.5px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.imp label{display:flex;align-items:center;gap:10px;cursor:pointer}
+.imp input[type=checkbox]{width:22px;height:22px!important;padding:0;flex:none;accent-color:var(--accent-fill)}
+.imp .t{overflow-wrap:anywhere}
+.imp .m{color:var(--muted);font-size:.84rem}
+/* últimos 6 meses: uma coluna por mês */
+.meses6{display:flex;align-items:flex-end;gap:8px;padding:12px 0 8px}
+.meses6>div{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.meses6 i{width:100%;max-width:44px;border-radius:5px 5px 0 0;background:var(--accent-fill);opacity:.45;min-height:2px}
+.meses6 .area{position:relative;width:100%;height:84px;display:flex;align-items:flex-end;justify-content:center}
+.meses6 .lin,.amostra{border-top:2px dashed var(--m-warn)}
+.meses6 .lin{position:absolute;left:-4px;right:-4px;height:0}
+.meses6 .lin.meta,.amostra.meta{border-top-color:var(--m-ok)}
+.legenda{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0;padding:0 0 10px}
+.legenda span{display:inline-flex;align-items:center;gap:6px}
+.amostra{display:inline-block;width:18px;height:0}
+.meses6 .sel{color:var(--fg);font-weight:600}
+.meses6 .sel i{opacity:1}
+.filter{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.filter select{width:auto;max-width:100%;min-width:0;text-overflow:ellipsis}
+
+/* telas de toque (celular e tablet): alvos maiores para o dedo e texto de 17px nos campos (evita o zoom automático do iPhone) */
+@media (pointer:coarse),(max-width:760px){
+  button{min-height:44px;padding:10px 16px}
+  button.ghost{padding:10px 10px}
+  button.topo-btn{width:44px;height:44px;padding:0}
+  header button.topo-btn{width:38px;height:38px;min-height:38px}
+  .seg button{min-height:36px;padding:6px 18px}
+  input,select{font-size:17px;padding:11px 12px}
+  input:not([type=radio]):not([type=file]),select{height:46px}
+  .swatches label{width:40px;height:40px}
+}
+/* celular: abas viram a barra de baixo e os formulários sobem como folha */
+@media (max-width:700px){
+  nav{position:fixed;inset:auto 0 0;top:auto;width:auto;max-width:none;margin:0;gap:0;border-radius:0;box-shadow:0 -.5px 0 var(--line);
+    padding:6px max(4px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px))}
+  nav a,nav a:hover,nav a[aria-current="page"]{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:2px;background:none;color:var(--muted);font-size:.69rem;font-weight:500;border-radius:8px}
+  nav a[aria-current="page"]{color:var(--accent)}
+  nav svg{display:block;width:26px;height:26px}
+  nav a[aria-current="page"] svg{stroke-width:2.2;fill:var(--accent-bg)}
+  .lg{display:none}
+  .dt{flex-wrap:wrap;gap:0}
+  .dt .filter{flex:1 0 100%;justify-content:flex-end;flex-wrap:nowrap;gap:10px;margin:4px 0 6px}
+  #hoje{order:2}
+  header{padding-top:calc(env(safe-area-inset-top,0px) + 2px)}
+  #status{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  .toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+  .mesnav{gap:4px}
+  .mesnav h2{min-width:0;flex:1;font-size:1.2rem}
+  button.mais{width:44px;padding:0 0 3px;font-size:1.6rem;font-weight:400;line-height:1;flex:none}
+  .wg,.wg.quatro{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .w.larga{grid-column:1/-1;min-height:0}
+  .w.tinta{grid-column:1/-1}
+  .w .gr{font-size:clamp(1.1rem,5.4vw,1.5rem)}
+  .w.tinta .gr{font-size:clamp(1.6rem,8.6vw,2.25rem)}
+  .sec>.bar a{padding-block:11px}
+  .filtro-linha .filter,.filtro-linha select{width:100%}
+  dialog{margin:auto 0 0;width:100%;max-width:100%;border-radius:14px 14px 0 0;max-height:calc(100dvh - 20px - env(safe-area-inset-top,0px))}
+  dialog form{padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+  dialog form::before{content:"";width:36px;height:5px;border-radius:3px;background:var(--fill-2);align-self:center;margin:-12px 0 -4px}
+  .actions .r{flex:1}
+  .actions .r button{flex:1}
+}
+@media (prefers-reduced-motion:no-preference){
+  button,nav a{transition:background-color .15s,opacity .15s}
+  dialog[open]{animation:sobe .4s var(--mola)}
+  dialog[open]::backdrop{animation:some .25s ease-out}
+  @media (max-width:700px){dialog[open]{animation-name:folha}}
+}
+@keyframes sobe{from{opacity:0;transform:scale(.96)}}
+@keyframes folha{from{transform:translateY(100%)}}
+@keyframes some{from{opacity:0}}
+button.tick{width:28px;height:28px;min-width:28px;min-height:28px;padding:0;border-radius:50%;background:transparent;border:2px solid var(--fill-2);flex:none}
+button.tick:hover{background:var(--accent-bg)}
+div.w[role=button]{cursor:pointer}
+.w.tinta .meter{background:rgba(0,0,0,.14)}
+</style>
+</head>
+<body>
+
+<nav id="tabs" aria-label="Seções">
+  <a href="#resumo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5H12z"/><path d="M15.5 3.2a8.5 8.5 0 0 1 5.3 5.3h-5.3z"/></svg>Resumo</a>
+  <a href="#compras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 4h2.4l2.1 11h9.6l2-8H7"/><circle cx="9.5" cy="19" r="1.2"/><circle cx="16.5" cy="19" r="1.2"/></svg>Compras</a>
+  <a href="#lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5 6 8l2.5-3M4.5 12.5 6 14l2.5-3M4.5 18.5 6 20l2.5-3"/><path d="M12 7h8M12 13h8M12 19h8"/></svg>Lista</a>
+  <a href="#categorias"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h6.2l8.3 8.3a1.5 1.5 0 0 1 0 2.1l-5.6 5.6a1.5 1.5 0 0 1-2.1 0L4 11.7z"/><circle cx="8.5" cy="8.5" r="1.2"/></svg>Categorias</a>
+</nav>
+<header>
+  <div class="wrap">
+    <div class="dt"><span id="hoje"></span>
+      <div class="filter"><button class="ghost" id="instalar" hidden>Instalar</button><button class="topo-btn" id="tema" aria-label="Ajustes" title="Ajustes">◐</button></div></div>
+    <h1 id="titulo">Resumo</h1>
+  </div>
+</header>
+
+<main class="wrap" id="view"></main>
+<p class="wrap sub" id="status"></p>
+
+<dialog id="dlg"><form id="frm" method="dialog"></form></dialog>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+const LS = "meu-mercado-v1";
+const CORES = ["#2e9e6a","#1f9bb0","#3b6fd8","#8a55c9","#d0679d","#d9534f","#c58a12","#6b7a8f"];
+const COLS = ["categorias","compras","lista"];
+const ABAS = {resumo:"Resumo", compras:"Compras", lista:"Lista", categorias:"Categorias"};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const brl = n => (n || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+const fmtNum = n => (+n).toFixed(2).replace(".", ",");
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+// aceita 12,50  12.50  1.250,00
+function parseBR(s){
+  s = String(s ?? "").trim().replace(/[R$\s]/g, "");
+  if (!s) return NaN;
+  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+  return parseFloat(s);
+}
+const pad = n => String(n).padStart(2, "0");
+const iso = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+const hoje = () => iso(new Date());
+const mesMove = (m, n) => { const [y, mm] = m.split("-").map(Number); const d = new Date(y, mm - 1 + n, 1); return d.getFullYear() + "-" + pad(d.getMonth() + 1); };
+const mesNome = m => { const [y, mm] = m.split("-").map(Number); return new Date(y, mm - 1, 1).toLocaleDateString("pt-BR", {month:"long", year:"numeric"}); };
+const diasMes = m => { const [y, mm] = m.split("-").map(Number); return new Date(y, mm, 0).getDate(); };
+const fmtData = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("pt-BR", {weekday:"short", day:"2-digit", month:"2-digit"}); };
+
+/* ---------- dados ---------- */
+function padrao(){
+  return {categorias:[["Alimentos",0],["Limpeza",1],["Doce",3],["Diversos",7]].map(([nome, i]) => ({id:uid(), nome, cor:CORES[i], limite:0, _t:Date.now()})),
+    compras:[], lista:[], config:{}, apagados:[]};
+}
+let S = null;
+try { S = JSON.parse(localStorage.getItem(LS)); } catch(e) {}
+if (!S || !Array.isArray(S.compras)) S = padrao();
+COLS.forEach(c => { if (!Array.isArray(S[c])) S[c] = []; });
+S.config = S.config || {}; S.apagados = S.apagados || [];
+function persist(){ try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e) { toast("Não consegui salvar neste navegador."); } }
+persist();
+const carimbar = o => { o._t = Date.now(); return o; };
+// tira o item da coleção e anota que foi apagado (para o backup não trazer de volta)
+function remover(col, id){
+  const i = S[col].findIndex(x => x.id === id); if (i < 0) return null;
+  const [it] = S[col].splice(i, 1);
+  S.apagados.push({col, id, _t:Date.now()});
+  return it;
+}
+function apagar(col, id){
+  const it = remover(col, id); if (!it) return;
+  persist(); render();
+  toast("Excluído", () => {
+    S.apagados = S.apagados.filter(a => !(a.col === col && a.id === id));
+    S[col].push(carimbar(it)); persist(); render();
+  });
+}
+const total = c => Math.round(c.preco * c.qtd * 100) / 100;
+const soma = a => a.reduce((s, c) => s + total(c), 0);
+const doMes = m => S.compras.filter(c => c.data.startsWith(m));
+const cat = id => S.categorias.find(c => c.id === id) || {id:"", nome:"Sem categoria", cor:"#8e8e93", limite:0};
+function porCat(compras){
+  const m = new Map();
+  compras.forEach(c => m.set(c.cat, (m.get(c.cat) || 0) + total(c)));
+  return [...m].map(([id, t]) => ({id, total:t})).sort((a, b) => b.total - a.total);
+}
+
+/* ---------- estado da tela ---------- */
+let mes = hoje().slice(0, 7);
+let filtro = "";
+let ultimo = {};
+
+/* ---------- peças de tela ---------- */
+const mesnav = () => `<div class="mesnav"><button class="topo-btn seta" data-act="mes-" aria-label="Mês anterior">‹</button><h2>${esc(mesNome(mes))}</h2><button class="topo-btn seta" data-act="mes+" aria-label="Próximo mês">›</button></div>`;
+const medidor = (p, cor) => `<div class="meter"><i style="width:${Math.min(100, Math.max(0, p * 100))}%;background:${cor}"></i></div>`;
+const corLimite = p => p > 1 ? "var(--m-bad)" : p >= .8 ? "var(--m-warn)" : "var(--m-ok)";
+const secao = (titulo, corpo, extra = "") => `<section class="sec"><div class="bar"><h2>${titulo}</h2>${extra}</div><div class="grupo">${corpo}</div></section>`;
+
+function vResumo(){
+  const cm = doMes(mes), g = soma(cm), teto = S.config.teto || 0, tw = S.config.tetoSemana || 0;
+  const h = hoje(), atual = mes === h.slice(0, 7), dia = +h.slice(8), dm = diasMes(mes);
+  const pct = teto ? g / teto : 0;
+  let w = `<div class="wg">`;
+  w += `<div class="w tinta" data-act="teto" role="button" tabindex="0"><span class="k">Gasto no mês <span class="ir">›</span></span><span class="gr">${brl(g)}</span><span class="p">${
+    teto ? (g > teto ? `Passou ${brl(g - teto)} do teto de ${brl(teto)}` : `Resta ${brl(teto - g)} de ${brl(teto)}`) : "Toque para definir o teto do mês"}</span>${teto ? medidor(pct, corLimite(pct)) : ""}</div>`;
+  if (atual) {
+    const d = new Date(), ini = new Date(d); ini.setDate(d.getDate() - (d.getDay() + 6) % 7);
+    const gs = soma(S.compras.filter(c => c.data >= iso(ini) && c.data <= h));
+    w += `<button class="w" data-act="teto"><span class="k">Esta semana</span><span class="gr ${tw && gs > tw ? "bad" : ""}">${brl(gs)}</span><span class="p">${
+      tw ? (gs > tw ? `Passou ${brl(gs - tw)}` : `Resta ${brl(tw - gs)}`) : "Sem teto semanal"}</span>${tw ? medidor(gs / tw, corLimite(gs / tw)) : ""}</button>`;
+  } else {
+    w += `<div class="w"><span class="k">Itens</span><span class="gr">${cm.length}</span><span class="p">Média ${brl(cm.length ? g / cm.length : 0)} por item</span></div>`;
+  }
+  if (atual && dia >= 3) {
+    const proj = g / dia * dm, passa = teto && proj > teto;
+    w += `<div class="w"><span class="k">Previsão do mês</span><span class="gr ${passa ? "bad" : ""}">${brl(proj)}</span><span class="p">${teto ? (passa ? `Vai passar ${brl(proj - teto)}` : "Dentro do teto") : "No ritmo atual"}</span></div>`;
+  } else {
+    w += `<div class="w"><span class="k">Média por dia</span><span class="gr">${brl(g / dm)}</span><span class="p">no mês</span></div>`;
+  }
+  w += `</div>`;
+
+  const pc = porCat(cm);
+  const avisos = pc.map(x => ({c:cat(x.id), t:x.total})).filter(x => x.c.limite && x.t >= .8 * x.c.limite).map(x =>
+    `<div class="notice"><span><b>${esc(x.c.nome)}</b> ${x.t > x.c.limite ? `passou do limite: ${brl(x.t)} de ${brl(x.c.limite)}` : `já está em ${Math.round(x.t / x.c.limite * 100)}% do limite (${brl(x.t)} de ${brl(x.c.limite)})`}</span></div>`).join("");
+
+  const onde = pc.length ? `<div class="list">` + pc.map(x => {
+    const c = cat(x.id), share = g ? x.total / g : 0, p = c.limite ? x.total / c.limite : share;
+    return `<div class="row"><span class="dot" style="background:${esc(c.cor)}"></span><div class="grow"><div class="t">${esc(c.nome)}</div><div class="m">${Math.round(share * 100)}% do total${c.limite ? ` · limite ${brl(c.limite)}` : ""}</div>${medidor(p, c.limite ? corLimite(p) : esc(c.cor))}</div><span class="val">${brl(x.total)}</span></div>`;
+  }).join("") + `</div>` : `<p class="empty">Nenhuma compra neste mês.</p>`;
+
+  const ant = porCat(doMes(mesMove(mes, -1))), antMap = new Map(ant.map(x => [x.id, x.total])), atMap = new Map(pc.map(x => [x.id, x.total]));
+  const ids = [...new Set([...antMap.keys(), ...atMap.keys()])];
+  const comp = ids.map(id => ({id, a:antMap.get(id) || 0, n:atMap.get(id) || 0})).map(x => ({...x, d:x.n - x.a})).sort((a, b) => b.d - a.d);
+  const compHtml = ant.length ? `<div class="list">` + comp.map(x => {
+    const c = cat(x.id);
+    return `<div class="row"><span class="dot" style="background:${esc(c.cor)}"></span><div class="grow"><div class="t">${esc(c.nome)}</div><div class="m">${brl(x.a)} → ${brl(x.n)}</div></div><span class="chip ${x.d > 0.005 ? "bad" : x.d < -0.005 ? "ok" : ""}">${x.d > 0.005 ? "+" : x.d < -0.005 ? "−" : ""}${brl(Math.abs(x.d))}</span></div>`;
+  }).join("") + `</div>` : `<p class="empty">Sem compras no mês anterior para comparar.</p>`;
+
+  const it = new Map();
+  cm.forEach(c => { const k = c.nome.trim().toLowerCase(); const o = it.get(k) || {nome:c.nome, t:0, n:0}; o.t += total(c); o.n++; it.set(k, o); });
+  const top = [...it.values()].sort((a, b) => b.t - a.t).slice(0, 6);
+  const itHtml = top.length ? `<div class="list">` + top.map(x => `<div class="row"><div class="grow"><div class="t">${esc(x.nome)}</div><div class="m">${x.n} ${x.n > 1 ? "compras" : "compra"} · ${g ? Math.round(x.t / g * 100) : 0}% do total</div></div><span class="val">${brl(x.t)}</span></div>`).join("") + `</div>` : `<p class="empty">Nenhuma compra neste mês.</p>`;
+
+  const idas = new Map();
+  cm.forEach(c => { const k = c.data + "|" + (c.local || ""); const o = idas.get(k) || {data:c.data, local:c.local || "", t:0, n:0}; o.t += total(c); o.n++; idas.set(k, o); });
+  const idHtml = idas.size ? `<div class="list">` + [...idas.values()].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 8).map(x => `<div class="row"><div class="grow"><div class="t">${esc(x.local || "Compras do dia")}</div><div class="m">${esc(fmtData(x.data))} · ${x.n} ${x.n > 1 ? "itens" : "item"}</div></div><span class="val">${brl(x.t)}</span></div>`).join("") + `</div>` : `<p class="empty">Nenhuma compra neste mês.</p>`;
+
+  return `<div class="bar">${mesnav()}</div>${w}${avisos}<div class="grid2"><div class="col">${secao("Onde está indo", onde)}${secao("Comparado ao mês passado", compHtml)}</div><div class="col">${secao("O que mais pesou", itHtml)}${secao("Por ida ao mercado", idHtml)}</div></div>`;
+}
+
+function vCompras(){
+  const lista = doMes(mes).filter(c => !filtro || c.cat === filtro).sort((a, b) => b.data.localeCompare(a.data) || (b._t || 0) - (a._t || 0));
+  let h = `<div class="bar">${mesnav()}<button class="primary mais" data-act="nova-compra" aria-label="Nova compra">+ Compra</button></div>`;
+  h += `<div class="bar filtro-linha"><div class="filter"><select id="filtro" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option>${S.categorias.map(c => `<option value="${esc(c.id)}"${c.id === filtro ? " selected" : ""}>${esc(c.nome)}</option>`).join("")}</select></div><span class="sub num">${lista.length} ${lista.length === 1 ? "item" : "itens"} · ${brl(soma(lista))}</span></div>`;
+  if (!lista.length) return h + `<div class="grupo"><p class="empty">Nenhuma compra aqui. Toque em <b>+ Compra</b> para anotar.</p></div>`;
+  const dias = new Map();
+  lista.forEach(c => { if (!dias.has(c.data)) dias.set(c.data, []); dias.get(c.data).push(c); });
+  dias.forEach((cs, d) => {
+    h += `<div class="dia-h"><span>${esc(fmtData(d))}</span><span class="num">${brl(soma(cs))}</span></div><div class="grupo"><div class="list">` + cs.map(c => {
+      const k = cat(c.cat);
+      return `<div class="row" data-edit="1" data-act="edit-compra" data-id="${esc(c.id)}"><span class="dot" style="background:${esc(k.cor)}"></span><div class="grow"><div class="t">${esc(c.nome)}</div><div class="m">${c.qtd !== 1 ? `${c.qtd} × ${brl(c.preco)} · ` : ""}${esc(k.nome)}${c.local ? " · " + esc(c.local) : ""}</div></div><span class="val">${brl(total(c))}</span></div>`;
+    }).join("") + `</div></div>`;
+  });
+  return h;
+}
+
+function vLista(){
+  const itens = S.lista, est = itens.reduce((s, x) => s + (x.preco || 0), 0);
+  const teto = S.config.teto || 0, gasto = soma(doMes(hoje().slice(0, 7)));
+  let h = `<div class="bar"><h2>A comprar</h2><button class="primary mais" data-act="novo-item" aria-label="Novo item">+ Item</button></div>`;
+  if (!itens.length) return h + `<div class="grupo"><p class="empty">Sua lista está vazia. Anote o que precisa comprar; ao marcar como comprado, ele vira uma compra.</p></div>`;
+  h += `<div class="notice"><span>Estimado da lista: <b>${brl(est)}</b>${teto ? ` · resta do teto do mês: <b>${brl(Math.max(0, teto - gasto))}</b>${est > teto - gasto ? " (a lista passa)" : ""}` : ""}</span></div>`;
+  const grupos = new Map();
+  itens.forEach(x => { if (!grupos.has(x.cat)) grupos.set(x.cat, []); grupos.get(x.cat).push(x); });
+  grupos.forEach((xs, id) => {
+    const k = cat(id);
+    h += `<div class="dia-h"><span>${esc(k.nome)}</span><span class="num">${brl(xs.reduce((s, x) => s + (x.preco || 0), 0))}</span></div><div class="grupo"><div class="list">` + xs.map(x =>
+      `<div class="row"><button class="tick" data-act="comprei" data-id="${esc(x.id)}" aria-label="Comprei ${esc(x.nome)}"></button><div class="grow" data-edit="1" data-act="edit-item" data-id="${esc(x.id)}"><div class="t">${esc(x.nome)}</div></div>${x.preco ? `<span class="val">${brl(x.preco)}</span>` : ""}</div>`).join("") + `</div></div>`;
+  });
+  return h;
+}
+
+function vCategorias(){
+  const gm = new Map(porCat(doMes(mes)).map(x => [x.id, x.total]));
+  let h = `<div class="bar">${mesnav()}<button class="primary mais" data-act="nova-cat" aria-label="Nova categoria">+ Categoria</button></div>`;
+  h += `<div class="grupo"><div class="list">` + S.categorias.map(c => {
+    const t = gm.get(c.id) || 0, p = c.limite ? t / c.limite : 0;
+    return `<div class="row" data-edit="1" data-act="edit-cat" data-id="${esc(c.id)}"><span class="dot" style="background:${esc(c.cor)}"></span><div class="grow"><div class="t">${esc(c.nome)}</div><div class="m">${c.limite ? `${brl(t)} de ${brl(c.limite)}` : "Sem limite"}</div>${c.limite ? medidor(p, corLimite(p)) : ""}</div><span class="val">${brl(t)}</span></div>`;
+  }).join("") + `</div></div><p class="need" style="margin:10px 4px">O limite de cada categoria é opcional. Quando uma chega a 80% dele, o Resumo avisa.</p>`;
+  return h;
+}
+
+const V = {resumo:vResumo, compras:vCompras, lista:vLista, categorias:vCategorias};
+function aba(){ const t = (location.hash || "#resumo").slice(1); return ABAS[t] ? t : "resumo"; }
+let abaAnterior = "";
+function render(){
+  const a = aba();
+  document.querySelectorAll("#tabs a").forEach(l => l.getAttribute("href") === "#" + a ? l.setAttribute("aria-current", "page") : l.removeAttribute("aria-current"));
+  $("#titulo").textContent = ABAS[a];
+  $("#hoje").textContent = new Date().toLocaleDateString("pt-BR", {weekday:"long", day:"numeric", month:"long"});
+  try { $("#view").innerHTML = V[a](); $("#status").textContent = ""; }
+  catch(e) {
+    console.error(e);
+    $("#view").innerHTML = `<div class="notice"><span>Algo deu errado ao desenhar esta tela. Seus dados estão salvos; baixe um backup por segurança.</span><button data-act="ajustes">Ajustes</button></div>`;
+  }
+  if (a !== abaAnterior) { window.scrollTo(0, 0); abaAnterior = a; }
+}
+
+/* ---------- janelas ---------- */
+const dlg = $("#dlg"), frm = $("#frm");
+function abrir(html, aoEnviar, extra){
+  frm.innerHTML = html;
+  frm.oninput = null;
+  frm.onsubmit = e => { e.preventDefault(); aoEnviar && aoEnviar(new FormData(frm), e.submitter); };
+  frm.onclick = e => {
+    const b = e.target.closest("[data-fechar],[data-x]"); if (!b) return;
+    if (b.hasAttribute("data-fechar")) fechar(); else extra && extra(b.dataset.x);
+  };
+  if (!dlg.open) dlg.showModal();
+  const h2 = frm.querySelector("h2"); if (h2) h2.focus();
+}
+const fechar = () => { if (dlg.open) dlg.close(); };
+const erro = t => { const e = $("#erro"); if (e) e.textContent = t; };
+const botoes = (extra = "") => `<p class="erro" id="erro" role="alert"></p><div class="actions"><div class="r iguais"><button type="button" data-fechar>Cancelar</button><button class="primary" value="ok">Salvar</button></div></div>${extra}`;
+const opcao = (x, txt, cls = "") => `<div class="opcoes"><button type="button" ${cls ? `class="${cls}" ` : ""}data-x="${x}">${txt}</button></div>`;
+const optCats = sel => S.categorias.map(c => `<option value="${esc(c.id)}"${c.id === sel ? " selected" : ""}>${esc(c.nome)}</option>`).join("");
+
+function formCompra(c = {}){
+  const novo = !c.id;
+  const nomes = [...new Set(S.compras.map(x => x.nome))].slice(-300), locais = [...new Set(S.compras.map(x => x.local).filter(Boolean))];
+  abrir(`<h2 tabindex="-1">${novo ? "Nova compra" : "Editar compra"}</h2>
+    <div class="field"><label for="fn">Item</label><input id="fn" name="nome" list="dl-n" required autocomplete="off" value="${esc(c.nome || "")}"></div>
+    <datalist id="dl-n">${nomes.map(n => `<option value="${esc(n)}">`).join("")}</datalist>
+    <div class="duo"><div class="field"><label for="fp">Preço (cada)</label><input id="fp" name="preco" inputmode="decimal" placeholder="0,00" required value="${c.preco ? fmtNum(c.preco) : ""}"></div>
+    <div class="field"><label for="fq">Quantidade</label><input id="fq" name="qtd" inputmode="decimal" value="${c.qtd || 1}"></div></div>
+    <div class="field"><label for="fc">Categoria</label><select id="fc" name="cat">${optCats(c.cat)}</select></div>
+    <div class="duo"><div class="field"><label for="fd">Data</label><input id="fd" type="date" name="data" required value="${esc(c.data || ultimo.data || hoje())}"></div>
+    <div class="field"><label for="fl">Onde (opcional)</label><input id="fl" name="local" list="dl-l" autocomplete="off" value="${esc(c.local ?? ultimo.local ?? "")}"></div></div>
+    <datalist id="dl-l">${locais.map(n => `<option value="${esc(n)}">`).join("")}</datalist>
+    ${botoes(novo ? `<div class="opcoes"><button type="submit" value="outro">Salvar e anotar outro<span>＋</span></button></div>` : opcao("del", "Excluir<span>🗑</span>", "danger"))}`,
+  (fd, sub) => {
+    const nome = String(fd.get("nome")).trim(), preco = parseBR(fd.get("preco")), qtd = parseBR(fd.get("qtd") || "1");
+    if (!nome) return erro("Escreva o nome do item.");
+    if (!(preco > 0)) return erro("Escreva o preço, por exemplo 12,50.");
+    if (!(qtd > 0)) return erro("A quantidade precisa ser maior que zero.");
+    if (!fd.get("data")) return erro("Escolha a data.");
+    const v = {nome, preco, qtd, cat:fd.get("cat"), data:fd.get("data"), local:String(fd.get("local")).trim()};
+    if (novo) S.compras.push(carimbar({id:uid(), ...v})); else Object.assign(c, v, {_t:Date.now()});
+    if (c.listaId) remover("lista", c.listaId);
+    ultimo = {data:v.data, local:v.local};
+    persist();
+    if (v.data.slice(0, 7) !== mes) mes = v.data.slice(0, 7);
+    if (sub && sub.value === "outro") { toast(`${nome} anotado`); formCompra({}); } else fechar();
+    render();
+  }, x => { if (x === "del") { fechar(); apagar("compras", c.id); } });
+  if (novo) frm.oninput = e => {
+    if (e.target.name !== "nome") return;
+    const m = [...S.compras].reverse().find(x => x.nome.toLowerCase() === e.target.value.trim().toLowerCase());
+    if (!m) return;
+    const f = frm.elements;
+    if (!f.preco.value) f.preco.value = fmtNum(m.preco);
+    if (!c.cat && S.categorias.some(k => k.id === m.cat)) f.cat.value = m.cat;
+  };
+}
+
+function formItem(x = {}){
+  const novo = !x.id;
+  abrir(`<h2 tabindex="-1">${novo ? "Novo item da lista" : "Editar item"}</h2>
+    <div class="field"><label for="in">O que comprar</label><input id="in" name="nome" required autocomplete="off" value="${esc(x.nome || "")}"></div>
+    <div class="duo"><div class="field"><label for="ic">Categoria</label><select id="ic" name="cat">${optCats(x.cat)}</select></div>
+    <div class="field"><label for="ip">Preço estimado</label><input id="ip" name="preco" inputmode="decimal" placeholder="opcional" value="${x.preco ? fmtNum(x.preco) : ""}"></div></div>
+    ${botoes(novo ? `<div class="opcoes"><button type="submit" value="outro">Salvar e anotar outro<span>＋</span></button></div>` : opcao("del", "Excluir<span>🗑</span>", "danger"))}`,
+  (fd, sub) => {
+    const nome = String(fd.get("nome")).trim(); if (!nome) return erro("Escreva o que precisa comprar.");
+    const p = parseBR(fd.get("preco")), v = {nome, cat:fd.get("cat"), preco:p > 0 ? p : 0};
+    if (novo) S.lista.push(carimbar({id:uid(), ...v})); else Object.assign(x, v, {_t:Date.now()});
+    persist();
+    if (sub && sub.value === "outro") { toast(`${nome} na lista`); formItem({cat:v.cat}); } else fechar();
+    render();
+  }, k => { if (k === "del") { fechar(); apagar("lista", x.id); } });
+}
+
+function formCat(c = {}){
+  const novo = !c.id, cor = c.cor || CORES.find(k => !S.categorias.some(x => x.cor === k)) || CORES[0];
+  abrir(`<h2 tabindex="-1">${novo ? "Nova categoria" : "Editar categoria"}</h2>
+    <div class="field"><label for="cn">Nome</label><input id="cn" name="nome" required autocomplete="off" value="${esc(c.nome || "")}"></div>
+    <div class="field"><label>Cor</label><div class="swatches">${CORES.map((k, i) => `<input type="radio" name="cor" id="cor${i}" value="${k}"${k === cor ? " checked" : ""}><label for="cor${i}" style="background:${k}" title="${k}"></label>`).join("")}</div></div>
+    <div class="field"><label for="cl">Limite por mês (opcional)</label><input id="cl" name="limite" inputmode="decimal" placeholder="sem limite" value="${c.limite ? fmtNum(c.limite) : ""}"></div>
+    ${botoes(novo ? "" : opcao("del", "Excluir categoria<span>🗑</span>", "danger"))}`,
+  fd => {
+    const nome = String(fd.get("nome")).trim(); if (!nome) return erro("Escreva o nome da categoria.");
+    const l = parseBR(fd.get("limite")), v = {nome, cor:fd.get("cor"), limite:l > 0 ? l : 0};
+    if (novo) S.categorias.push(carimbar({id:uid(), ...v})); else Object.assign(c, v, {_t:Date.now()});
+    persist(); fechar(); render();
+  }, x => {
+    if (x !== "del") return;
+    const n = S.compras.filter(k => k.cat === c.id).length;
+    if (confirm(`Apagar a categoria ${c.nome}?${n ? ` As ${n} compras dela ficam "Sem categoria".` : ""}`)) { fechar(); apagar("categorias", c.id); }
+  });
+}
+
+function formTeto(){
+  abrir(`<h2 tabindex="-1">Quanto posso gastar</h2>
+    <div class="field"><label for="tm">Teto do mês</label><input id="tm" name="m" inputmode="decimal" placeholder="ex.: 1.200,00" value="${S.config.teto ? fmtNum(S.config.teto) : ""}"></div>
+    <div class="field"><label for="ts">Teto por semana (opcional)</label><input id="ts" name="s" inputmode="decimal" placeholder="ex.: 300,00" value="${S.config.tetoSemana ? fmtNum(S.config.tetoSemana) : ""}"></div>
+    <p class="need">A semana vai de segunda a domingo. Dica: o teto do mês dividido por 4 dá uma boa ideia para a semana.</p>
+    ${botoes()}`,
+  fd => {
+    const m = parseBR(fd.get("m")), s = parseBR(fd.get("s"));
+    S.config.teto = m > 0 ? m : 0; S.config.tetoSemana = s > 0 ? s : 0; S.config._t = Date.now();
+    persist(); fechar(); render();
+  });
+}
+
+function aplicarTema(t){ const r = document.documentElement; try { if (t === "auto") { delete r.dataset.theme; localStorage.removeItem("meu-mercado-tema"); } else { r.dataset.theme = t; localStorage.setItem("meu-mercado-tema", t); } } catch(e) {} }
+function aplicarCor(c){ document.documentElement.dataset.cor = c; try { localStorage.setItem("meu-mercado-cor", c); } catch(e) {} }
+function baixar(nome, texto, tipo){
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([texto], {type:tipo})); a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function csv(){
+  const q = s => '"' + String(s ?? "").replace(/"/g, '""') + '"';
+  return "﻿" + ["Data;Item;Categoria;Quantidade;Preço;Total;Onde"].concat(S.compras.slice().sort((a, b) => a.data.localeCompare(b.data)).map(c =>
+    [c.data, q(c.nome), q(cat(c.cat).nome), c.qtd, fmtNum(c.preco), fmtNum(total(c)), q(c.local)].join(";"))).join("\n");
+}
+function juntar(o){
+  if (!o || !Array.isArray(o.compras)) throw new Error("arquivo inválido");
+  const ap = [...S.apagados, ...(Array.isArray(o.apagados) ? o.apagados : [])];
+  COLS.forEach(col => {
+    const m = new Map(S[col].map(x => [x.id, x]));
+    (Array.isArray(o[col]) ? o[col] : []).forEach(x => { if (!x || !x.id) return; const a = m.get(x.id); if (!a || (x._t || 0) > (a._t || 0)) m.set(x.id, x); });
+    S[col] = [...m.values()].filter(x => !ap.some(t => t.col === col && t.id === x.id && t._t >= (x._t || 0)));
+  });
+  S.apagados = ap;
+  Object.entries(o.config || {}).forEach(([k, v]) => { if (!(k in S.config)) S.config[k] = v; });
+}
+function formAjustes(){
+  const r = document.documentElement.dataset, tema = r.theme || "auto", cor = r.cor || "azul";
+  const seg = (grupo, lista, atual) => `<div class="seg cheia">${lista.map(([v, t]) => `<button type="button" data-x="${grupo}:${v}" aria-pressed="${v === atual}">${t}</button>`).join("")}</div>`;
+  abrir(`<h2 tabindex="-1">Ajustes</h2>
+    <div class="field"><label>Tema</label>${seg("tema", [["auto","Automático"],["light","Claro"],["dark","Escuro"]], tema)}</div>
+    <div class="field"><label>Cor do app</label>${seg("cor", [["verde","Verde"],["azul","Azul"],["bordo","Bordô"]], cor)}</div>
+    <div class="field"><label>Seus dados</label><div class="opcoes"><button type="button" data-x="backup">Baixar backup<span>⤓</span></button><button type="button" data-x="csv">Baixar planilha (CSV)<span>⤓</span></button></div></div>
+    <div class="field"><input type="file" id="bkFile" class="sr" accept=".json,application/json"><label class="arquivo" for="bkFile">Importar backup</label></div>
+    <p class="need">Os dados ficam só neste aparelho. Faça um backup de vez em quando.</p>
+    <p class="erro" id="erro" role="alert"></p>
+    <div class="actions"><div class="r iguais"><button type="button" class="primary" data-fechar>Pronto</button></div></div>`,
+  null, x => {
+    const [k, v] = x.split(":");
+    if (k === "tema") { aplicarTema(v); formAjustes(); }
+    else if (k === "cor") { aplicarCor(v); formAjustes(); }
+    else if (x === "backup") baixar("meu-mercado-backup-" + hoje() + ".json", JSON.stringify(S, null, 1), "application/json");
+    else if (x === "csv") baixar("meu-mercado-" + hoje() + ".csv", csv(), "text/csv");
+  });
+  $("#bkFile").onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => { try { juntar(JSON.parse(rd.result)); persist(); fechar(); render(); toast("Backup importado"); } catch(err) { erro("Esse arquivo não parece um backup do Meu Mercado."); } };
+    rd.readAsText(f);
+  };
+}
+
+let tt = 0;
+function toast(msg, desfazer){
+  const t = $("#toast"); t.textContent = msg; t.hidden = false;
+  if (desfazer) { const b = document.createElement("button"); b.textContent = "Desfazer"; b.onclick = () => { t.hidden = true; desfazer(); }; t.appendChild(b); }
+  clearTimeout(tt); tt = setTimeout(() => { t.hidden = true; }, 5000);
+}
+
+/* ---------- toques ---------- */
+const ACOES = {
+  "mes-": () => { mes = mesMove(mes, -1); render(); },
+  "mes+": () => { mes = mesMove(mes, 1); render(); },
+  "teto": formTeto,
+  "ajustes": formAjustes,
+  "nova-compra": () => formCompra({}),
+  "edit-compra": id => formCompra(S.compras.find(x => x.id === id)),
+  "novo-item": () => formItem({}),
+  "edit-item": id => formItem(S.lista.find(x => x.id === id)),
+  "comprei": id => { const x = S.lista.find(k => k.id === id); if (x) formCompra({nome:x.nome, cat:x.cat, preco:x.preco, listaId:x.id}); },
+  "nova-cat": () => formCat({}),
+  "edit-cat": id => formCat(S.categorias.find(x => x.id === id))
+};
+$("#view").addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const f = ACOES[b.dataset.act]; if (f) f(b.dataset.id);
+});
+$("#view").addEventListener("keydown", e => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches("[role=button]")) { e.preventDefault(); e.target.click(); }
+});
+$("#view").addEventListener("change", e => { if (e.target.id === "filtro") { filtro = e.target.value; render(); } });
+$("#tema").addEventListener("click", formAjustes);
+window.addEventListener("hashchange", render);
+dlg.addEventListener("click", e => { if (e.target === dlg) fechar(); });
+
+// instalar como aplicativo (Android/Chrome); no iPhone: Compartilhar > Adicionar à Tela de Início
+let pedido = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); pedido = e; $("#instalar").hidden = false; });
+$("#instalar").addEventListener("click", () => { if (pedido) { pedido.prompt(); pedido = null; $("#instalar").hidden = true; } });
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(() => {});
+
+render();
+window.__app = {get S(){ return S; }};
+})();
+</script>
+</body>
+</html>
